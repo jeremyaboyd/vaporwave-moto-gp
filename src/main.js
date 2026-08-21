@@ -241,12 +241,22 @@ function startSchool() {
   school.start();
 }
 
+// tilt permission is requested inside the PLAY/SCHOOL tap gesture (iOS needs one)
+function requestTiltIfWanted() {
+  if (document.body.classList.contains('touch') && getControlMode() === 'tilt') enableTilt();
+}
 document.getElementById('btn-play').addEventListener('click', () => {
-  if (state.phase === 'menu') { resetWorld(); startRun(); }
-  else if (state.phase === 'dead' && !hud.enteringInitials) { resetWorld(); startRun(); }
+  if (state.phase === 'menu' || (state.phase === 'dead' && !hud.enteringInitials)) {
+    requestTiltIfWanted();
+    resetWorld();
+    startRun();
+  }
 });
 document.getElementById('btn-school').addEventListener('click', () => {
-  if (state.phase === 'menu' || (state.phase === 'dead' && !hud.enteringInitials)) startSchool();
+  if (state.phase === 'menu' || (state.phase === 'dead' && !hud.enteringInitials)) {
+    requestTiltIfWanted();
+    startSchool();
+  }
 });
 
 onStart(() => { if (state.phase === 'menu') { resetWorld(); startRun(); } });

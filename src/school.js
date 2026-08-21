@@ -20,11 +20,11 @@ export class School {
 
     this.lessons = [
       {
-        text: () => byMode('TILT FORWARD TO ACCELERATE', 'HOLD GAS TO ACCELERATE', 'HOLD W TO ACCELERATE'),
+        text: () => byMode('HOLD GAS TO ACCELERATE', 'HOLD GAS TO ACCELERATE', 'HOLD W TO ACCELERATE'),
         done: () => this.d.player.speed > 30,
       },
       {
-        text: () => byMode('TILT BACK TO BRAKE', 'HOLD BRK TO BRAKE', 'HOLD S TO BRAKE'),
+        text: () => byMode('HOLD BRK TO BRAKE', 'HOLD BRK TO BRAKE', 'HOLD S TO BRAKE'),
         done: () => {
           if (this.d.player.speed > 25) this.f.wasFast = true;
           return this.f.wasFast && this.d.player.speed < 8;

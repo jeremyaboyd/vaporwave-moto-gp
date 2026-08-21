@@ -31,12 +31,13 @@ function applyControlMode() {
 }
 
 // --- Accelerometer tilt (mobile) ---
-// Tilt right to steer right, tilt forward/back for throttle/brake.
+// Steering only: tilt right to lean right. Gas/brake stay on-screen buttons —
+// pitch-based throttle fought however the player naturally held the phone.
 export const tilt = {
   supported: typeof DeviceOrientationEvent !== 'undefined',
   active: false,
   status: 'idle',       // idle | waiting | active | denied | unavailable
-  neutralPitch: null,   // captured at run start so the holding angle is neutral
+  neutralRoll: null,    // captured at run start so a habitual grip angle is neutral
   wantCalibrate: false,
 };
 
@@ -49,7 +50,6 @@ function setTiltStatus(s) {
 }
 
 const STEER_FULL = 22;    // degrees of roll for full lean
-const PITCH_FULL = 13;    // degrees from neutral for full throttle/brake
 
 function onOrientation(e) {
   if (e.beta === null || e.gamma === null) return;
@@ -66,20 +66,20 @@ function onOrientation(e) {
   }
   // remap device axes by screen rotation so landscape works too
   const angle = (screen.orientation && screen.orientation.angle) ?? (window.orientation || 0);
-  let roll, pitch; // roll: screen-right-edge down = +; pitch: top-toward-face = +
+  let roll; // screen-right-edge down = +
   switch (angle) {
-    case 90: roll = e.beta; pitch = -e.gamma; break;
-    case 180: roll = -e.gamma; pitch = -e.beta; break;
-    case 270: case -90: roll = -e.beta; pitch = e.gamma; break;
-    default: roll = e.gamma; pitch = e.beta;
+    case 90: roll = e.beta; break;
+    case 180: roll = -e.gamma; break;
+    case 270: case -90: roll = -e.beta; break;
+    default: roll = e.gamma;
   }
-  if (tilt.wantCalibrate || tilt.neutralPitch === null) {
-    tilt.neutralPitch = pitch;
+  if (tilt.wantCalibrate || tilt.neutralRoll === null) {
+    tilt.neutralRoll = roll;
     tilt.wantCalibrate = false;
   }
-  controls.steerAxis = Math.max(-1, Math.min(1, roll / STEER_FULL));
-  // tilting the top away from you (pitch drops below neutral) accelerates
-  controls.throttleAxis = Math.max(-1, Math.min(1, (tilt.neutralPitch - pitch) / PITCH_FULL));
+  controls.steerAxis = Math.max(-1, Math.min(1, (roll - tilt.neutralRoll) / STEER_FULL));
+  // gas/brake are on-screen buttons even in tilt mode
+  controls.throttleAxis = null;
 }
 
 let tiltListening = false;
@@ -174,20 +174,9 @@ bindTouch('t-brake', 'brake');
 bindTouch('t-left', 'left');
 bindTouch('t-right', 'right');
 
-// Any tap requests tilt permission (iOS requires a user gesture). On touch
-// devices start/restart is ONLY the PLAY button — tap-anywhere restart would
-// swallow scroll gestures on the high-score table.
+// On touch devices start/restart is ONLY the PLAY button — and tilt permission
+// is requested inside that button's gesture (see main.js), never on stray taps.
 const INTERACTIVE = '.tbtn, .mbtn, #shop, #hs-panel, #initials-entry';
-window.addEventListener('touchstart', (e) => {
-  if (e.target.closest && e.target.closest('.tbtn, #shop')) return;
-  if (getControlMode() !== 'buttons') enableTilt();
-}, { passive: true });
-
-// Retry tilt activation on every tap-release too — some browsers only count
-// certain gesture types as user activation for the motion permission prompt.
-window.addEventListener('touchend', () => {
-  if (!tilt.active && tilt.status !== 'unavailable' && getControlMode() !== 'buttons') enableTilt();
-}, { passive: true });
 
 // Desktop click off the UI restarts after a crash. Touch devices skip this —
 // taps synthesize mouse events, and mobile restarts only via the PLAY button.

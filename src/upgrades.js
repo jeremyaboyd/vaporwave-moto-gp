@@ -36,6 +36,11 @@ export class Upgrades {
   armorLeft() { return Math.max(0, this.levels.armor - this.armorUsed); }
   useArmor() { this.armorUsed++; }
 
+  // patching a spent charge is cheaper than a new armor level, but not cheap
+  repairCost() { return 350; }
+  canRepair() { return this.armorUsed > 0; }
+  repairArmor() { if (this.armorUsed > 0) this.armorUsed--; }
+
   accelMul() { return 1 + 0.15 * this.levels.accel; }
   topMul() { return 1 + 0.08 * this.levels.top; }
   brakeMul() { return 1 + 0.2 * this.levels.brakes; }
