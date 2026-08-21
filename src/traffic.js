@@ -127,6 +127,11 @@ export class Traffic {
     }
   }
 
+  remove(v) {
+    const i = this.vehicles.indexOf(v);
+    if (i >= 0) { this.group.remove(v.mesh); this.vehicles.splice(i, 1); }
+  }
+
   rebase(shift) { for (const v of this.vehicles) { v.z += shift; v.mesh.position.z = v.z; } }
 
   reset() {

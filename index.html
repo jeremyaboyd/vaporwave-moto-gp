@@ -56,6 +56,103 @@
     text-shadow: 0 0 10px rgba(155,48,255,.8);
   }
 
+  #hud-cash { margin-top: 8px; }
+  #hud-cash .value {
+    font-family: 'Orbitron', sans-serif; font-weight: 700;
+    font-size: clamp(15px, 2vw, 22px); color: #3fff8f;
+    text-shadow: 0 0 8px rgba(63,255,143,.8), 0 0 20px rgba(63,255,143,.4);
+    transition: transform .12s;
+  }
+  #hud-cash .value.pulse { transform: scale(1.25); }
+  #hud-timer {
+    position: absolute; top: max(16px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+    text-align: center;
+  }
+  #hud-timer .value {
+    font-family: 'Orbitron', sans-serif; font-weight: 900;
+    font-size: clamp(24px, 3.8vw, 44px); color: var(--cyan);
+    text-shadow: 0 0 10px rgba(47,233,255,.8), 0 0 28px rgba(47,233,255,.4);
+  }
+  #hud-timer .value.low { color: #ff2050; text-shadow: 0 0 10px rgba(255,32,80,.9), 0 0 28px rgba(255,32,80,.5); animation: blink .5s steps(2) infinite; }
+  #hud-armor { margin-top: 4px; letter-spacing: 3px; font-size: clamp(13px, 1.8vw, 18px); color: var(--pink); text-shadow: 0 0 8px rgba(255,47,214,.8); }
+  #hud-boost {
+    position: absolute; bottom: max(60px, calc(env(safe-area-inset-bottom) + 46px)); left: 50%; transform: translateX(-50%);
+    width: min(320px, 44vw); text-align: center;
+  }
+  #hud-boost .bar {
+    height: 10px; border: 1px solid rgba(47,233,255,.6); border-radius: 5px;
+    box-shadow: 0 0 10px rgba(47,233,255,.3); overflow: hidden; margin-top: 3px;
+  }
+  #hud-boost .fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--cyan), var(--pink));
+    box-shadow: 0 0 12px rgba(255,47,214,.8);
+    transition: width .1s linear;
+  }
+  #hud-boost.boosting .fill { background: linear-gradient(90deg, #fff, var(--pink)); }
+  #toasts {
+    position: absolute; top: 22%; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 6px; width: 90vw; text-align: center;
+  }
+  .toast {
+    font-family: 'Orbitron', sans-serif; font-weight: 700;
+    font-size: clamp(14px, 2.2vw, 24px); letter-spacing: .18em; color: #fff;
+    text-shadow: 0 0 10px rgba(255,255,255,.7), 0 0 30px rgba(255,47,214,.6);
+    animation: toast-fade 2.6s forwards;
+  }
+  .toast.money { color: #3fff8f; text-shadow: 0 0 10px rgba(63,255,143,.8), 0 0 30px rgba(63,255,143,.4); }
+  .toast.warn { color: #ffd23f; text-shadow: 0 0 10px rgba(255,210,63,.8), 0 0 30px rgba(255,210,63,.4); }
+  @keyframes toast-fade {
+    0% { opacity: 0; transform: translateY(10px) scale(.9); }
+    10% { opacity: 1; transform: none; }
+    75% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-14px); }
+  }
+
+  #shop {
+    position: fixed; inset: 0; z-index: 20; display: none;
+    align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 50% 55%, rgba(30,4,60,.7), rgba(5,1,13,.92));
+    font-family: 'Orbitron', sans-serif;
+  }
+  #shop.open { display: flex; }
+  #shop .panel {
+    width: min(680px, 94vw); border: 2px solid rgba(47,233,255,.5); border-radius: 10px;
+    background: rgba(8,2,20,.85); padding: clamp(14px, 3vw, 28px);
+    box-shadow: 0 0 30px rgba(47,233,255,.25), inset 0 0 40px rgba(155,48,255,.12);
+  }
+  #shop h2 {
+    font-weight: 900; font-size: clamp(20px, 3.4vw, 34px); letter-spacing: .12em; font-style: italic;
+    background: linear-gradient(180deg, var(--pink), var(--cyan));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-bottom: 4px;
+  }
+  #shop .cash-line {
+    font-family: 'Share Tech Mono', monospace; color: #3fff8f; font-size: clamp(13px, 1.8vw, 17px);
+    text-shadow: 0 0 8px rgba(63,255,143,.7); margin-bottom: 14px; letter-spacing: .15em;
+  }
+  .upgrade-row {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    background: rgba(47,233,255,.05); border: 1px solid rgba(47,233,255,.3); border-radius: 6px;
+    padding: 10px 14px; margin-bottom: 8px; cursor: pointer; text-align: left;
+    color: var(--cyan); font-family: 'Share Tech Mono', monospace;
+  }
+  .upgrade-row:hover:not(.disabled) { background: rgba(255,47,214,.12); border-color: rgba(255,47,214,.7); }
+  .upgrade-row.disabled { opacity: .38; cursor: default; }
+  .upgrade-row .num { font-family: 'Orbitron', sans-serif; font-weight: 900; color: var(--pink); font-size: 18px; width: 20px; }
+  .upgrade-row .info { flex: 1; }
+  .upgrade-row .uname { font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: .12em; font-size: clamp(12px, 1.7vw, 15px); color: #fff; }
+  .upgrade-row .udesc { font-size: clamp(10px, 1.4vw, 12px); color: var(--dim); margin-top: 2px; }
+  .upgrade-row .pips { letter-spacing: 2px; color: var(--pink); font-size: 13px; }
+  .upgrade-row .cost { font-family: 'Orbitron', sans-serif; font-weight: 700; color: #3fff8f; font-size: clamp(12px, 1.7vw, 15px); min-width: 74px; text-align: right; }
+  #shop .leave {
+    margin-top: 10px; width: 100%; padding: 12px; border-radius: 6px; cursor: pointer;
+    font-family: 'Orbitron', sans-serif; font-weight: 900; letter-spacing: .25em; font-size: clamp(13px, 2vw, 17px);
+    color: #fff; background: rgba(255,47,214,.15); border: 2px solid rgba(255,47,214,.7);
+    text-shadow: 0 0 8px rgba(255,47,214,.8);
+  }
+  #shop .hint { font-family: 'Share Tech Mono', monospace; color: var(--dim); font-size: 11px; letter-spacing: .12em; margin-top: 10px; text-align: center; }
+
   #overlay {
     position: fixed; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 14px;
@@ -109,6 +206,7 @@
   #t-left  { left: 18px;  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px); }
   #t-right { left: calc(18px + clamp(58px,11vw,84px) + 14px); bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px); }
   #t-gas   { right: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px + clamp(58px,11vw,84px) + 12px); }
+  #t-boost { right: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px + (clamp(58px,11vw,84px) + 12px) * 2); }
   #t-brake { right: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px); }
 </style>
 </head>
@@ -121,12 +219,26 @@
     <div class="value" id="score">0</div>
     <div class="label" style="margin-top:6px">HIGH SCORE</div>
     <div class="hi" id="high-score">0</div>
+    <div id="hud-cash">
+      <div class="label">CASH</div>
+      <div class="value" id="cash">$0</div>
+    </div>
+  </div>
+  <div id="hud-timer">
+    <div class="label">TIME</div>
+    <div class="value" id="timer">--</div>
   </div>
   <div id="hud-speed">
     <div class="label">SPEED</div>
     <div class="value" id="speed">0</div>
     <div class="unit">KM/H</div>
+    <div id="hud-armor"></div>
   </div>
+  <div id="hud-boost">
+    <div class="label">BOOST [SPACE]</div>
+    <div class="bar"><div class="fill" id="boost-fill"></div></div>
+  </div>
+  <div id="toasts"></div>
   <div id="hud-stats">
     <div><span class="label">DISTANCE&nbsp;</span><span id="distance">0.00 KM</span></div>
     <div><span class="label">TIME ALIVE&nbsp;</span><span id="time-alive">00:00.00</span></div>
@@ -137,8 +249,19 @@
 <div id="touch-controls">
   <div class="tbtn" id="t-left">&#9664;</div>
   <div class="tbtn" id="t-right">&#9654;</div>
+  <div class="tbtn" id="t-boost">BST</div>
   <div class="tbtn" id="t-gas">GAS</div>
   <div class="tbtn" id="t-brake">BRK</div>
+</div>
+
+<div id="shop">
+  <div class="panel">
+    <h2>NEON GARAGE</h2>
+    <div class="cash-line" id="shop-cash">CASH $0 — CLOCK PAUSED</div>
+    <div id="shop-list"></div>
+    <button class="leave" id="shop-leave">RIDE OUT [ENTER]</button>
+    <div class="hint">PRESS 1-5 TO BUY &nbsp;·&nbsp; ENTER / ESC TO LEAVE</div>
+  </div>
 </div>
 
 <div id="overlay">
@@ -147,7 +270,8 @@
   <div class="big-score" id="overlay-score" style="display:none"></div>
   <div class="prompt" id="overlay-prompt">PRESS ENTER / TAP TO RIDE</div>
   <div class="controls">
-    <b>W</b> ACCELERATE &nbsp; <b>S</b> BRAKE &nbsp; <b>A</b>/<b>D</b> LEAN &nbsp; <b>MOUSE</b> LOOK &nbsp; <b>R</b> RESTART
+    <b>W</b> ACCELERATE &nbsp; <b>S</b> BRAKE &nbsp; <b>A</b>/<b>D</b> LEAN &nbsp; <b>SPACE</b> BOOST &nbsp; <b>MOUSE</b> LOOK &nbsp; <b>R</b> RESTART<br>
+    BEAT THE CLOCK &nbsp;·&nbsp; GRAB <b>$</b> &nbsp;·&nbsp; PULL INTO THE <b>NEON GARAGE</b> ON THE RIGHT SHOULDER TO UPGRADE
   </div>
 </div>
 

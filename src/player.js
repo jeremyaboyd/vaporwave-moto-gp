@@ -94,18 +94,50 @@ export class Player {
     this.airborne = false;
     this.airTime = 0;
     this.distance = 0;
+    this.boostMeter = 0;
+    this.boosting = false;
+    this.invulnT = 0;
     this.mesh.position.set(this.x, 0, 0);
     this.mesh.rotation.set(0, 0, 0);
+    this.mesh.visible = true;
   }
 
   get kmh() { return Math.round(this.speed * 3.6); }
 
   update(dt, alive) {
+    const up = this.upgrades;
+
+    // --- boost (2x accel + a little overspeed while burning meter) ---
+    const cap = up ? up.boostCap() : 0;
+    this.boosting = alive && cap > 0 && controls.boost && this.boostMeter > 0.05;
+    if (this.boosting) {
+      this.boostMeter = Math.max(0, this.boostMeter - dt);
+    } else if (cap > 0) {
+      this.boostMeter = Math.min(cap, this.boostMeter + dt / 5); // 1s of boost per 5s
+    }
+
     // --- longitudinal ---
-    if (alive && controls.accel) this.speed += ACCEL * dt;
-    else if (alive && controls.brake) this.speed -= BRAKE * dt;
-    else this.speed -= DRAG * dt;
-    this.speed = Math.max(0, Math.min(MAX_SPEED, this.speed));
+    const accel = ACCEL * (up ? up.accelMul() : 1) * (this.boosting ? 2 : 1);
+    const brake = BRAKE * (up ? up.brakeMul() : 1);
+    const maxSpeed = MAX_SPEED * (up ? up.topMul() : 1) * (this.boosting ? 1.12 : 1);
+    if (alive && (controls.accel || this.boosting)) {
+      if (this.speed < maxSpeed) this.speed = Math.min(maxSpeed, this.speed + accel * dt);
+    } else if (alive && controls.brake) {
+      this.speed -= brake * dt;
+    } else {
+      this.speed -= DRAG * dt;
+    }
+    // over the cap (e.g. boost just ended): bleed off gently
+    if (this.speed > maxSpeed) this.speed = Math.max(maxSpeed, this.speed - DRAG * 3 * dt);
+    this.speed = Math.max(0, this.speed);
+
+    // --- armor invulnerability flash ---
+    if (this.invulnT > 0) {
+      this.invulnT -= dt;
+      this.mesh.visible = (this.invulnT * 12 | 0) % 2 === 0;
+    } else if (!this.mesh.visible) {
+      this.mesh.visible = true;
+    }
 
     // --- lateral (lean) ---
     const target = alive ? ((controls.right ? 1 : 0) - (controls.left ? 1 : 0)) : 0;

@@ -148,6 +148,11 @@ export class Obstacles {
     }
   }
 
+  remove(o) {
+    const i = this.killers.indexOf(o);
+    if (i >= 0) { this.group.remove(o.mesh); this.killers.splice(i, 1); }
+  }
+
   prune(playerZ) {
     const behind = playerZ + 220;
     const drop = (arr) => {

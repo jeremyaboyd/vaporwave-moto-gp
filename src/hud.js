@@ -11,6 +11,13 @@ const overlaySub = el('overlay-sub');
 const overlayScore = el('overlay-score');
 const overlayPrompt = el('overlay-prompt');
 
+const cashEl = el('cash');
+const timerEl = el('timer');
+const armorEl = el('hud-armor');
+const boostWrap = el('hud-boost');
+const boostFill = el('boost-fill');
+const toastsEl = el('toasts');
+
 const HS_KEY = 'neon-nightrider-highscore';
 
 export class Hud {
@@ -53,10 +60,48 @@ export class Hud {
     timeEl.textContent = formatTime(timeAlive);
   }
 
-  showDeath(score) {
+  setCash(cash, pulse) {
+    cashEl.textContent = '$' + cash.toLocaleString();
+    if (pulse) {
+      cashEl.classList.remove('pulse');
+      void cashEl.offsetWidth; // restart the transition
+      cashEl.classList.add('pulse');
+      clearTimeout(this._pulseT);
+      this._pulseT = setTimeout(() => cashEl.classList.remove('pulse'), 140);
+    }
+  }
+
+  setTimer(t, active) {
+    if (!active) { timerEl.textContent = '--'; timerEl.classList.remove('low'); return; }
+    timerEl.textContent = Math.max(0, t).toFixed(1);
+    timerEl.classList.toggle('low', t < 5);
+  }
+
+  setArmor(n) {
+    const txt = n > 0 ? '▮'.repeat(n) : '';
+    if (armorEl.textContent !== txt) armorEl.textContent = txt;
+  }
+
+  setBoost(meter, cap, boosting) {
+    boostWrap.style.display = cap > 0 ? '' : 'none';
+    if (cap > 0) {
+      boostFill.style.width = (meter / cap * 100).toFixed(1) + '%';
+      boostWrap.classList.toggle('boosting', boosting);
+    }
+  }
+
+  toast(text, kind = '') {
+    const t = document.createElement('div');
+    t.className = 'toast ' + kind;
+    t.textContent = text;
+    toastsEl.appendChild(t);
+    setTimeout(() => t.remove(), 2700);
+  }
+
+  showDeath(score, reason = 'YOU RODE INTO THE GRID') {
     localStorage.setItem(HS_KEY, String(Math.floor(this.highScore)));
     overlay.querySelector('h1').innerHTML = 'GAME<br>OVER';
-    overlaySub.textContent = 'YOU RODE INTO THE GRID';
+    overlaySub.textContent = reason;
     overlayScore.style.display = 'block';
     overlayScore.textContent = 'SCORE ' + Math.floor(score).toLocaleString();
     overlayPrompt.textContent = 'PRESS R / TAP TO RESTART';

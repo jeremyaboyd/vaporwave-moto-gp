@@ -5,6 +5,7 @@ export const controls = {
   brake: false,
   left: false,
   right: false,
+  boost: false,
   lookX: 0,   // -1..1, mouse position relative to screen center
   lookY: 0,
 };
@@ -24,12 +25,14 @@ const KEYMAP = {
 window.addEventListener('keydown', (e) => {
   const c = KEYMAP[e.code];
   if (c) { controls[c] = true; e.preventDefault(); }
-  if (e.code === 'Enter' || e.code === 'Space') startHandlers.forEach(f => f());
+  if (e.code === 'Space') { controls.boost = true; e.preventDefault(); }
+  if (e.code === 'Enter') startHandlers.forEach(f => f());
   if (e.code === 'KeyR') restartHandlers.forEach(f => f());
 });
 window.addEventListener('keyup', (e) => {
   const c = KEYMAP[e.code];
   if (c) controls[c] = false;
+  if (e.code === 'Space') controls.boost = false;
 });
 
 window.addEventListener('mousemove', (e) => {
@@ -51,6 +54,7 @@ function bindTouch(id, prop) {
   el.addEventListener('touchcancel', up, { passive: false });
 }
 bindTouch('t-gas', 'accel');
+bindTouch('t-boost', 'boost');
 bindTouch('t-brake', 'brake');
 bindTouch('t-left', 'left');
 bindTouch('t-right', 'right');

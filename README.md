@@ -22,9 +22,11 @@ dependencies to install.
 | **W** / ↑ | Accelerate |
 | **S** / ↓ | Brake |
 | **A** / **D** (← / →) | Lean left / right |
+| **Space** | Boost (needs the Boost upgrade) |
 | **Mouse** | Look around |
 | **Enter** / click | Start |
 | **R** | Restart after a crash |
+| **1–5 / Enter / Esc** | Buy / leave, inside the shop |
 
 On touch devices, on-screen GAS / BRK / arrows appear automatically; tap
 anywhere to start or restart.
@@ -44,5 +46,14 @@ anywhere to start or restart.
   (one touch kills) plus ramps that launch you with speed-dependent air.
 - **Scoring** — distance × speed multiplier, +150 per near miss, +400/s
   airborne. High score persists in `localStorage`.
+- **Checkpoints** — the road is cut into 600 m sections; reach each checkpoint
+  before the clock hits zero (limits tighten as you go). Sections grade you:
+  avg speed over 150 km/h, 5+ near misses, and 1.5 s+ of air each pay cash.
+- **Cash & upgrades** — grab `$` pickups on the road and arced over ramps.
+  Every 2.4 km a **Neon Garage** appears on the right shoulder; drive through
+  its gate to pause the clock and buy: Armor (each level eats one crash),
+  Acceleration, Top Speed, Brakes, and Boost (Space: 2x accel, 1 s of burn per
+  level, 1 s regenerates every 5 s). Everything resets on death — it's a
+  roguelike.
 - **Look** — everything is black-filled meshes with neon edge lines, a striped
   synthwave sun, vertex-colored terrain grid, and (on desktop) bloom.
