@@ -59,6 +59,9 @@ export const state = {
   deadAt: 0,
   cash: 0,
   tutorial: false,     // suppresses traffic/hazard/shop spawning
+  deathT: 0,
+  deathCinematic: false,
+  deathReason: undefined,
 };
 
 export const hud = new Hud();
@@ -163,8 +166,31 @@ export function die(reason) {
   if (state.phase !== 'run') return;
   state.phase = 'dead';
   state.deadAt = performance.now();
+  state.deathT = 0;
+  state.deathCinematic = true;
+  state.deathReason = reason;
   player.startCrash();
-  hud.showDeath(hud.score, reason);
+  // the game-over screen waits for the crash cinematic (see updateDeathCamera)
+}
+
+// Death cinematic: the chase cam lags for half a second, then drifts over to
+// hover above the thrown rider; the game-over screen fades in afterwards.
+const _riderPos = new THREE.Vector3();
+const _camTarget = new THREE.Vector3();
+function updateDeathCamera(dt) {
+  state.deathT += dt;
+  if (state.deathT < 0.5) {
+    player.updateCamera(camera, dt);
+    return;
+  }
+  player.riderMesh.getWorldPosition(_riderPos);
+  _camTarget.set(_riderPos.x + 2.2, _riderPos.y + 7.5, _riderPos.z + 4.5);
+  camera.position.lerp(_camTarget, Math.min(1, dt * 2.2));
+  camera.lookAt(_riderPos);
+  if (state.deathCinematic && state.deathT > 2.6) {
+    state.deathCinematic = false;
+    hud.showDeath(hud.score, state.deathReason);
+  }
 }
 
 // A crash: armor eats it (destroying what you hit), otherwise it's fatal.
@@ -184,6 +210,7 @@ export function damage(removeEntity) {
 
 function startRun() {
   state.tutorial = false;
+  state.deathCinematic = false;
   player.reset();
   hud.reset();
   upgrades.reset();
@@ -264,8 +291,8 @@ document.getElementById('btn-school').addEventListener('click', () => {
 
 onStart(() => { if (state.phase === 'menu') { resetWorld(); startRun(); } });
 onRestart(() => {
-  // small delay so a panicked R/tap at the moment of death doesn't skip the score screen
-  if (state.phase === 'dead' && !hud.enteringInitials && performance.now() - state.deadAt > 700) {
+  // no restarting mid-cinematic, and a small extra delay against panicked taps
+  if (state.phase === 'dead' && !state.deathCinematic && !hud.enteringInitials && performance.now() - state.deadAt > 700) {
     resetWorld();
     startRun();
   }
@@ -311,7 +338,8 @@ function frame() {
 
   if (state.phase !== 'menu') {
     player.update(dt, riding);
-    player.updateCamera(camera, dt);
+    if (state.phase === 'dead') updateDeathCamera(dt);
+    else player.updateCamera(camera, dt);
   } else {
     // slow cinematic drift on the menu
     player.z -= 14 * dt;
