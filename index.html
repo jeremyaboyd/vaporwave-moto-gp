@@ -208,6 +208,7 @@
 
   #touch-controls { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 5; }
   body.touch #touch-controls { display: block; }
+  body.overlay-open #touch-controls { display: none; } /* no ghost buttons behind menus */
   .tbtn {
     position: absolute; pointer-events: auto;
     width: clamp(58px, 11vw, 84px); height: clamp(58px, 11vw, 84px);
@@ -295,6 +296,16 @@
     font-size: clamp(11px, 1.6vw, 14px); color: var(--dim); letter-spacing: .2em;
   }
 
+  #school-quit {
+    position: fixed; top: calc(max(16px, env(safe-area-inset-top)) + 86px);
+    right: max(14px, env(safe-area-inset-right)); z-index: 7; display: none;
+    padding: 8px 14px; border-radius: 6px; cursor: pointer;
+    font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: .15em;
+    font-size: clamp(10px, 1.6vw, 13px); color: var(--dim);
+    background: rgba(122,111,155,.08); border: 1px solid rgba(122,111,155,.5);
+  }
+  #school-quit:hover { color: #fff; border-color: rgba(255,47,214,.7); }
+
   #wrongway {
     position: absolute; top: calc(max(16px, env(safe-area-inset-top)) + clamp(50px, 8vw, 84px));
     left: 50%; transform: translateX(-50%); display: none;
@@ -354,6 +365,7 @@
   <div class="lesson" id="school-lesson"></div>
   <div class="step" id="school-step"></div>
 </div>
+<button id="school-quit">&#10005; QUIT</button>
 
 <div id="shop">
   <div class="panel">
@@ -383,7 +395,7 @@
     </div>
   </div>
   <div id="hs-panel">
-    <div class="label" style="margin-bottom:6px">HIGH SCORES — CLICK A COLUMN TO SORT</div>
+    <div class="label" style="margin-bottom:6px;text-align:center">HIGH SCORES · TAP A COLUMN TO SORT</div>
     <table id="hs-table">
       <thead><tr><th>#</th><th data-k="initials">NAME</th><th data-k="score" class="sorted">SCORE</th><th data-k="date">DATE</th></tr></thead>
       <tbody></tbody>

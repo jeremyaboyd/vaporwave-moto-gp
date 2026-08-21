@@ -80,6 +80,9 @@ export class School {
     window.addEventListener('keydown', (e) => {
       if (this.running && e.code === 'Escape') this.exit();
     });
+    document.getElementById('school-quit').addEventListener('click', () => {
+      if (this.running) this.exit();
+    });
   }
 
   start() {
@@ -88,6 +91,7 @@ export class School {
     this.idx = 0;
     this.f = {};
     promptEl().style.display = 'block';
+    document.getElementById('school-quit').style.display = 'block';
     this.applyLesson();
   }
 
@@ -96,7 +100,7 @@ export class School {
     const L = this.lessons[this.idx];
     if (L.setup) L.setup();
     lessonEl().textContent = L.text();
-    stepEl().textContent = `LESSON ${this.idx + 1} / ${this.lessons.length} — ESC TO QUIT`;
+    stepEl().textContent = `LESSON ${this.idx + 1} / ${this.lessons.length}` + (isTouchUI() ? '' : ' — ESC TO QUIT');
   }
 
   spawnLessonRamp() {
@@ -124,6 +128,7 @@ export class School {
         this.completed = true;
         this.running = false;
         promptEl().style.display = 'none';
+        document.getElementById('school-quit').style.display = 'none';
         this.d.onGraduate();
       } else {
         this.d.hud.toast('NICE!', 'money');
@@ -136,6 +141,7 @@ export class School {
     if (!this.running) return;
     this.running = false;
     promptEl().style.display = 'none';
+    document.getElementById('school-quit').style.display = 'none';
     this.d.onExit();
   }
 }

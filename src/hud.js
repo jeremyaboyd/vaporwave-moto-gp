@@ -155,6 +155,7 @@ export class Hud {
     this.enteringInitials = false;
     this.renderScores();
     overlay.classList.remove('hidden');
+    document.body.classList.add('overlay-open');
   }
 
   showDeath(score, reason = 'YOU RODE INTO THE GRID') {
@@ -177,9 +178,13 @@ export class Hud {
     }
     this.renderScores();
     overlay.classList.remove('hidden');
+    document.body.classList.add('overlay-open');
   }
 
-  hideOverlay() { overlay.classList.add('hidden'); }
+  hideOverlay() {
+    overlay.classList.add('hidden');
+    document.body.classList.remove('overlay-open');
+  }
 
   // --- misc HUD ---
 
