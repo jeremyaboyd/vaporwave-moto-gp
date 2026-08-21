@@ -159,6 +159,22 @@
     background: radial-gradient(ellipse at 50% 60%, rgba(20,2,40,.55), rgba(5,1,13,.88));
     font-family: 'Orbitron', sans-serif; text-align: center;
     transition: opacity .4s; z-index: 10;
+    padding: 18px max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    overflow-y: auto;
+  }
+  #overlay > * { max-width: 94vw; }
+  #version-badge {
+    position: absolute; bottom: max(8px, env(safe-area-inset-bottom)); right: 12px;
+    font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--dim);
+    letter-spacing: .15em;
+  }
+  @media (max-width: 520px), (max-height: 480px) {
+    #overlay { gap: 8px; }
+    #overlay h1 { font-size: clamp(26px, 9vw, 40px); }
+    #overlay .sub { font-size: 11px; letter-spacing: .12em; }
+    #overlay .big-score { font-size: clamp(22px, 7vw, 34px); }
+    #overlay .prompt { font-size: 13px; letter-spacing: .18em; }
+    #overlay .controls { font-size: 9px; line-height: 1.8; letter-spacing: .08em; }
   }
   #overlay.hidden { opacity: 0; pointer-events: none; }
   #overlay h1 {
@@ -221,6 +237,8 @@
   }
   .touch-only { display: none; }
   body.touch .touch-only { display: block; }
+  body.touch .desktop-only { display: none; }
+  .desktop-only { display: block; }
   #t-brake { right: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px); }
 </style>
 </head>
@@ -283,21 +301,40 @@
   <div class="sub" id="overlay-sub">INFINITE MOTO-GP STREET RUNNER</div>
   <div class="big-score" id="overlay-score" style="display:none"></div>
   <div class="prompt" id="overlay-prompt">PRESS ENTER / TAP TO RIDE</div>
+  <div class="sub touch-only" id="tilt-status" style="font-size:11px">TILT: TAP TO ENABLE</div>
   <div class="controls">
-    <b>W</b> ACCELERATE &nbsp; <b>S</b> BRAKE &nbsp; <b>A</b>/<b>D</b> LEAN &nbsp; <b>SPACE</b> BOOST &nbsp; <b>MOUSE</b> LOOK &nbsp; <b>R</b> RESTART<br>
-    BEAT THE CLOCK &nbsp;·&nbsp; GRAB <b>$</b> &nbsp;·&nbsp; PULL INTO THE <b>NEON GARAGE</b> ON THE RIGHT SHOULDER TO UPGRADE
-    <span class="touch-only"><b>TILT</b> TO STEER &nbsp;·&nbsp; TILT FORWARD / BACK FOR GAS &amp; BRAKE &nbsp;·&nbsp; <b>BST</b> BUTTON TO BOOST</span>
+    <span class="desktop-only"><b>W</b> ACCELERATE &nbsp; <b>S</b> BRAKE &nbsp; <b>A</b>/<b>D</b> LEAN &nbsp; <b>SPACE</b> BOOST &nbsp; <b>MOUSE</b> LOOK &nbsp; <b>R</b> RESTART</span>
+    <span class="touch-only"><b>TILT</b> TO STEER · TILT FORWARD / BACK FOR GAS &amp; BRAKE · <b>BST</b> TO BOOST</span>
+    BEAT THE CLOCK · GRAB <b>$</b> · PULL INTO THE <b>NEON GARAGE</b> ON THE RIGHT TO UPGRADE
   </div>
+  <div id="version-badge">BUILD v3</div>
 </div>
 
 <script type="importmap">
 {
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "./src/main.js": "./src/main.js?v=3",
+    "./src/sky.js": "./src/sky.js?v=3",
+    "./src/road.js": "./src/road.js?v=3",
+    "./src/biomes.js": "./src/biomes.js?v=3",
+    "./src/assets.js": "./src/assets.js?v=3",
+    "./src/player.js": "./src/player.js?v=3",
+    "./src/input.js": "./src/input.js?v=3",
+    "./src/traffic.js": "./src/traffic.js?v=3",
+    "./src/obstacles.js": "./src/obstacles.js?v=3",
+    "./src/scenery.js": "./src/scenery.js?v=3",
+    "./src/hud.js": "./src/hud.js?v=3",
+    "./src/upgrades.js": "./src/upgrades.js?v=3",
+    "./src/checkpoints.js": "./src/checkpoints.js?v=3",
+    "./src/pickups.js": "./src/pickups.js?v=3",
+    "./src/shop.js": "./src/shop.js?v=3"
   }
 }
 </script>
-<script type="module" src="./src/main.js"></script>
+<!-- GAME_VERSION: bump every deploy (importmap v= params + the badge below) so
+     GitHub Pages' 10-minute module cache can never mix builds -->
+<script type="module" src="./src/main.js?v=3"></script>
 </body>
 </html>
