@@ -12,6 +12,24 @@ export const controls = {
   throttleAxis: null,  // analog -1..1 from tilt: + accelerates, - brakes
 };
 
+// --- Control mode preference (mobile): tilt sensing vs on-screen buttons ---
+const MODE_KEY = 'neon-nightrider-controls';
+export function getControlMode() { return localStorage.getItem(MODE_KEY) || 'tilt'; }
+export function setControlMode(mode) {
+  localStorage.setItem(MODE_KEY, mode);
+  applyControlMode();
+}
+function applyControlMode() {
+  if (getControlMode() === 'buttons') {
+    document.body.classList.remove('tilt-on');
+    controls.steerAxis = null;
+    controls.throttleAxis = null;
+  } else if (tilt.active) {
+    document.body.classList.add('tilt-on');
+    tilt.wantCalibrate = true;
+  }
+}
+
 // --- Accelerometer tilt (mobile) ---
 // Tilt right to steer right, tilt forward/back for throttle/brake.
 export const tilt = {
@@ -35,6 +53,11 @@ const PITCH_FULL = 13;    // degrees from neutral for full throttle/brake
 
 function onOrientation(e) {
   if (e.beta === null || e.gamma === null) return;
+  if (getControlMode() === 'buttons') {
+    // sensor stays warm but the player chose buttons — don't drive the bike
+    if (!tilt.active) { tilt.active = true; clearTimeout(tiltWaitTimer); setTiltStatus('active'); }
+    return;
+  }
   if (!tilt.active) {
     tilt.active = true;
     clearTimeout(tiltWaitTimer);
@@ -154,13 +177,13 @@ bindTouch('t-right', 'right');
 const INTERACTIVE = '.tbtn, .mbtn, #shop, #hs-panel, #initials-entry';
 window.addEventListener('touchstart', (e) => {
   if (e.target.closest && e.target.closest('.tbtn, #shop')) return;
-  enableTilt();
+  if (getControlMode() !== 'buttons') enableTilt();
 }, { passive: true });
 
 // Retry tilt activation on every tap-release too — some browsers only count
 // certain gesture types as user activation for the motion permission prompt.
 window.addEventListener('touchend', () => {
-  if (!tilt.active && tilt.status !== 'unavailable') enableTilt();
+  if (!tilt.active && tilt.status !== 'unavailable' && getControlMode() !== 'buttons') enableTilt();
 }, { passive: true });
 
 // Desktop click off the UI restarts after a crash. Touch devices skip this —

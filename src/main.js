@@ -15,7 +15,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { biomeMixAt, lerpColor } from './biomes.js';
-import { onStart, onRestart, calibrateTilt, onTiltStatus } from './input.js';
+import { onStart, onRestart, calibrateTilt, onTiltStatus, getControlMode, setControlMode, enableTilt } from './input.js';
 
 export const WORLD = {
   roadWidth: 26,
@@ -197,6 +197,21 @@ function startRun() {
   state.phase = 'shop';
   shop.enterFree();
 }
+
+// Controls toggle (touch only): tilt sensing vs on-screen buttons
+const btnControls = document.getElementById('btn-controls');
+function refreshControlsUI() {
+  const buttons = getControlMode() === 'buttons';
+  btnControls.textContent = 'CONTROLS: ' + (buttons ? 'BUTTONS' : 'TILT');
+  document.getElementById('tilt-status').style.display = buttons ? 'none' : '';
+}
+btnControls.addEventListener('click', () => {
+  const next = getControlMode() === 'tilt' ? 'buttons' : 'tilt';
+  setControlMode(next);
+  if (next === 'tilt') { enableTilt(); calibrateTilt(); } // click gesture satisfies iOS
+  refreshControlsUI();
+});
+refreshControlsUI();
 
 const tiltStatusEl = document.getElementById('tilt-status');
 onTiltStatus((s) => {
