@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createSky } from './sky.js';
+import { RoadManager } from './road.js';
 
 export const WORLD = {
   forward: -1,          // player travels toward -Z
@@ -24,7 +25,24 @@ scene.fog = new THREE.Fog('#0a0318', 120, 620);
 export const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.1, 2200);
 camera.position.set(0, 4.2, 10);
 
+const updaters = [];
+export function onUpdate(fn) { updaters.push(fn); }
+
 const sky = createSky(scene);
+
+// World-space rebase bookkeeping: distance travelled d = zShift - z.
+export const state = { zShift: 0 };
+
+export const road = new RoadManager(scene, WORLD, state);
+
+// Temporary auto-drive until the player module lands.
+let tempZ = 0;
+onUpdate((dt) => {
+  tempZ -= 40 * dt;
+  camera.position.set(0, 4.2, tempZ + 10);
+  camera.lookAt(0, 2, tempZ - 40);
+  road.update(tempZ);
+});
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -34,8 +52,6 @@ window.addEventListener('resize', () => {
 
 // --- Game loop ---
 const clock = new THREE.Clock();
-const updaters = [];
-export function onUpdate(fn) { updaters.push(fn); }
 
 function frame() {
   requestAnimationFrame(frame);
