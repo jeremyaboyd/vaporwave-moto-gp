@@ -174,10 +174,13 @@ function startRun() {
   hud.hideOverlay();
 }
 
+const tiltStatusEl = document.getElementById('tilt-status');
 onTiltStatus((s) => {
   if (s === 'active') { hud.toast('TILT CONTROLS ACTIVE', 'money'); calibrateTilt(); }
   else if (s === 'denied') hud.toast('MOTION ACCESS DENIED — TAP TO RETRY', 'warn');
   else if (s === 'unavailable') hud.toast('NO TILT SENSOR — USING BUTTONS', 'warn');
+  const label = { waiting: 'TILT: LISTENING…', active: 'TILT: ACTIVE', denied: 'TILT: DENIED — TAP TO RETRY', unavailable: 'TILT: NO SENSOR' }[s];
+  if (tiltStatusEl && label) tiltStatusEl.textContent = label;
 });
 
 onStart(() => { if (state.phase === 'menu') startRun(); });
