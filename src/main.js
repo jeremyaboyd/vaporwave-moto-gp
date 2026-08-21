@@ -1,15 +1,19 @@
 import * as THREE from 'three';
 import { createSky } from './sky.js';
 import { RoadManager } from './road.js';
+import { Player } from './player.js';
+import { onStart, onRestart } from './input.js';
 
 export const WORLD = {
-  forward: -1,          // player travels toward -Z
-  roadWidth: 26,        // full paved width
+  roadWidth: 26,
   laneXs: [-9.5, -4, 4, 9.5], // lanes 0,1 oncoming; 2,3 with traffic
   segmentLength: 60,
   segmentsAhead: 22,
   segmentsBehind: 3,
 };
+
+const REBASE_AT = -4000;
+const REBASE_SHIFT = 4000;
 
 const app = document.getElementById('app');
 
@@ -27,22 +31,53 @@ camera.position.set(0, 4.2, 10);
 
 const updaters = [];
 export function onUpdate(fn) { updaters.push(fn); }
+const rebasers = [];
+export function onRebase(fn) { rebasers.push(fn); }
 
 const sky = createSky(scene);
 
 // World-space rebase bookkeeping: distance travelled d = zShift - z.
-export const state = { zShift: 0 };
+export const state = {
+  zShift: 0,
+  phase: 'menu',       // 'menu' | 'run' | 'dead'
+  timeAlive: 0,
+  deadAt: 0,
+};
 
 export const road = new RoadManager(scene, WORLD, state);
+export const player = new Player(scene);
 
-// Temporary auto-drive until the player module lands.
-let tempZ = 0;
-onUpdate((dt) => {
-  tempZ -= 40 * dt;
-  camera.position.set(0, 4.2, tempZ + 10);
-  camera.lookAt(0, 2, tempZ - 40);
-  road.update(tempZ);
+export function die() {
+  if (state.phase !== 'run') return;
+  state.phase = 'dead';
+  state.deadAt = performance.now();
+}
+
+function startRun() {
+  player.reset();
+  state.zShift = 0;
+  state.timeAlive = 0;
+  state.phase = 'run';
+  document.getElementById('overlay').classList.add('hidden');
+}
+
+onStart(() => { if (state.phase === 'menu') startRun(); });
+onRestart(() => {
+  // small delay so a panicked R/tap at the moment of death doesn't skip the score screen
+  if (state.phase === 'dead' && performance.now() - state.deadAt > 700) {
+    resetWorld();
+    startRun();
+  }
 });
+
+// Full world rebuild on restart: nuke all segments so traffic/obstacles respawn.
+function resetWorld() {
+  while (road.segments.length) road.disposeSegment(road.segments.shift());
+  road.nextZ0 = WORLD.segmentLength * WORLD.segmentsBehind;
+  for (const fn of resetHandlers) fn();
+}
+const resetHandlers = [];
+export function onReset(fn) { resetHandlers.push(fn); }
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -55,8 +90,35 @@ const clock = new THREE.Clock();
 
 function frame() {
   requestAnimationFrame(frame);
-  const dt = Math.min(clock.getDelta(), 1 / 20); // clamp long tab-away frames
-  for (const fn of updaters) fn(dt);
+  const dt = Math.min(clock.getDelta(), 1 / 20);
+
+  const alive = state.phase === 'run';
+  if (alive) state.timeAlive += dt;
+
+  if (state.phase !== 'menu') {
+    player.update(dt, alive);
+    player.updateCamera(camera, dt);
+  } else {
+    // slow cinematic drift on the menu
+    player.z -= 14 * dt;
+    player.mesh.position.z = player.z;
+    camera.position.set(Math.sin(clock.elapsedTime * 0.2) * 3, 4.5, player.z + 10);
+    camera.lookAt(0, 2, player.z - 40);
+  }
+
+  road.update(player.z);
+
+  // rebase far from origin to keep float precision healthy
+  if (player.z < REBASE_AT) {
+    player.z += REBASE_SHIFT;
+    player.mesh.position.z = player.z;
+    camera.position.z += REBASE_SHIFT;
+    state.zShift += REBASE_SHIFT;
+    road.rebase(REBASE_SHIFT);
+    for (const fn of rebasers) fn(REBASE_SHIFT);
+  }
+
+  for (const fn of updaters) fn(dt, alive);
   sky.update(camera);
   renderer.render(scene, camera);
 }
