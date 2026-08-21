@@ -3,6 +3,7 @@ import { createSky } from './sky.js';
 import { RoadManager } from './road.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
+import { Obstacles } from './obstacles.js';
 import { onStart, onRestart } from './input.js';
 
 export const WORLD = {
@@ -53,6 +54,15 @@ export const traffic = new Traffic(scene, WORLD, road);
 onRebase((s) => traffic.rebase(s));
 onReset(() => traffic.reset());
 onUpdate((dt, alive) => traffic.update(dt, player, alive, () => die()));
+
+export const obstacles = new Obstacles(scene, WORLD, road);
+player.groundHeightAt = (x, z) => obstacles.groundHeightAt(x, z);
+onRebase((s) => obstacles.rebase(s));
+onReset(() => obstacles.reset());
+onUpdate((dt, alive) => {
+  obstacles.update(player, alive, () => die());
+  obstacles.prune(player.z);
+});
 
 export function die() {
   if (state.phase !== 'run') return;

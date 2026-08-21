@@ -149,16 +149,6 @@ export class Player {
         this.y = ground;
         this.vy = Math.max(0, this.vy);
       }
-      // launch once we leave a ramp with upward velocity
-      if (this.vy > 4 && ground < this.y - 0.01) {
-        this.airborne = true;
-        this.airTime = 0;
-      }
-    }
-    // takeoff check: if we have big vy and ground dropped away
-    if (!this.airborne && this.vy > 5) {
-      this.airborne = true;
-      this.airTime = 0;
     }
 
     // --- visuals ---
