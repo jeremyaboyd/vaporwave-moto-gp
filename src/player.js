@@ -51,19 +51,6 @@ function buildBikeMesh() {
   bars.position.set(0, 1.35, -0.72);
   bike.add(bars);
 
-  // rider
-  const torso = neonMesh(new THREE.BoxGeometry(0.5, 0.7, 0.9), cyan);
-  torso.position.set(0, 1.62, 0.28);
-  torso.rotation.x = -0.75;
-  const helmet = neonMesh(new THREE.SphereGeometry(0.26, 8, 6), pink, 30);
-  helmet.position.set(0, 1.95, -0.18);
-  const legL = neonMesh(new THREE.BoxGeometry(0.18, 0.7, 0.3), cyan);
-  legL.position.set(0.33, 1.05, 0.35);
-  legL.rotation.x = 0.5;
-  const legR = legL.clone();
-  legR.position.x = -0.33;
-  bike.add(torso, helmet, legL, legR);
-
   const tail = glowQuad(0.4, 0.16, '#ff2050');
   tail.position.set(0, 1.0, 1.06);
   bike.add(tail);
@@ -71,12 +58,36 @@ function buildBikeMesh() {
   head.position.set(0, 1.0, -1.25);
   bike.add(head);
 
-  return bike;
+  // rider lives in its own group, centered on its torso, so a crash can
+  // detach and tumble it around its own center
+  const RIDER_Y = 1.5;
+  const rider = new THREE.Group();
+  const torso = neonMesh(new THREE.BoxGeometry(0.5, 0.7, 0.9), cyan);
+  torso.position.set(0, 1.62 - RIDER_Y, 0.28);
+  torso.rotation.x = -0.75;
+  const helmet = neonMesh(new THREE.SphereGeometry(0.26, 8, 6), pink, 30);
+  helmet.position.set(0, 1.95 - RIDER_Y, -0.18);
+  const legL = neonMesh(new THREE.BoxGeometry(0.18, 0.7, 0.3), cyan);
+  legL.position.set(0.33, 1.05 - RIDER_Y, 0.35);
+  legL.rotation.x = 0.5;
+  const legR = legL.clone();
+  legR.position.x = -0.33;
+  rider.add(torso, helmet, legL, legR);
+  rider.position.y = RIDER_Y;
+
+  const root = new THREE.Group();
+  root.add(bike, rider);
+  return { root, rider, riderHomeY: RIDER_Y };
 }
 
 export class Player {
   constructor(scene) {
-    this.mesh = buildBikeMesh();
+    this.scene = scene;
+    const built = buildBikeMesh();
+    this.mesh = built.root;
+    this.riderMesh = built.rider;
+    this.riderHomeY = built.riderHomeY;
+    this.crashState = null;
     scene.add(this.mesh);
     // groundHeightAt(x, z) -> ramp/road surface height under the bike;
     // installed by the obstacles module.
@@ -100,6 +111,30 @@ export class Player {
     this.mesh.position.set(this.x, 0, 0);
     this.mesh.rotation.set(0, 0, 0);
     this.mesh.visible = true;
+    // re-seat the rider if a crash threw them off
+    if (this.riderMesh.parent !== this.mesh) this.mesh.add(this.riderMesh);
+    this.riderMesh.position.set(0, this.riderHomeY, 0);
+    this.riderMesh.rotation.set(0, 0, 0);
+    this.crashState = null;
+  }
+
+  // called at the moment of death: eject the rider ballistically
+  startCrash() {
+    if (this.crashState) return;
+    this.scene.attach(this.riderMesh); // keep world transform while re-parenting
+    this.crashState = {
+      vel: new THREE.Vector3(
+        this.lean * 4 + (Math.random() - 0.5) * 3,
+        6.5 + this.speed * 0.06,
+        -this.speed * 0.85,               // thrown over the bars, ahead of the bike
+      ),
+      angVel: new THREE.Vector3(
+        6 + Math.random() * 8,
+        (Math.random() - 0.5) * 6,
+        (Math.random() - 0.5) * 10,
+      ),
+      resting: false,
+    };
   }
 
   get kmh() { return Math.round(this.speed * 3.6); }
@@ -196,10 +231,33 @@ export class Player {
       this.mesh.rotation.z = -this.lean * 0.55;
       this.mesh.rotation.x = this.airborne ? Math.min(0.35, this.vy * -0.02) : 0;
       this.mesh.rotation.y = -this.lean * 0.18;
-    } else if (this.speed > 1) {
-      // crash tumble: slide and spin out while coasting to a stop
-      this.mesh.rotation.z += dt * 9;
-      this.mesh.rotation.y += dt * 4;
+    } else {
+      // crash: the bike slams down on its side and grinds to a stop...
+      this.speed *= Math.max(0, 1 - 3.5 * dt);
+      this.mesh.rotation.z += (1.35 - this.mesh.rotation.z) * Math.min(1, dt * 6);
+      this.mesh.rotation.x *= Math.max(0, 1 - dt * 8);
+      if (this.speed > 4) this.mesh.rotation.y += dt * 1.6; // skidding sideways
+      // ...while the rider ragdolls: ballistic arc, tumbling, bouncing to rest
+      const cs = this.crashState;
+      if (cs && !cs.resting) {
+        cs.vel.y += GRAVITY * dt;
+        this.riderMesh.position.addScaledVector(cs.vel, dt);
+        this.riderMesh.rotation.x += cs.angVel.x * dt;
+        this.riderMesh.rotation.y += cs.angVel.y * dt;
+        this.riderMesh.rotation.z += cs.angVel.z * dt;
+        if (this.riderMesh.position.y < 0.45 && cs.vel.y < 0) {
+          this.riderMesh.position.y = 0.45;
+          cs.vel.y *= -0.38;                       // bounce
+          cs.vel.x *= 0.55; cs.vel.z *= 0.55;      // ground scrub
+          cs.angVel.multiplyScalar(0.55);
+          if (Math.abs(cs.vel.y) < 1.4) {          // came to rest — sprawl flat
+            cs.resting = true;
+            cs.vel.set(0, 0, 0);
+            this.riderMesh.position.y = 0.4;
+            this.riderMesh.rotation.set(Math.PI / 2, this.riderMesh.rotation.y, 0);
+          }
+        }
+      }
     }
   }
 

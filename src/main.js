@@ -69,6 +69,8 @@ export const road = new RoadManager(scene, WORLD, state);
 export const player = new Player(scene);
 export const traffic = new Traffic(scene, WORLD, road);
 player.upgrades = upgrades;
+// a crashed rider is parented to the scene — keep them through world rebases
+onRebase((s) => { if (player.riderMesh.parent === scene) player.riderMesh.position.z += s; });
 onRebase((s) => traffic.rebase(s));
 onReset(() => traffic.reset());
 onUpdate((dt, alive) => traffic.update(dt, player, alive, (v) => damage(() => traffic.remove(v))));
@@ -161,6 +163,7 @@ export function die(reason) {
   if (state.phase !== 'run') return;
   state.phase = 'dead';
   state.deadAt = performance.now();
+  player.startCrash();
   hud.showDeath(hud.score, reason);
 }
 
