@@ -111,15 +111,17 @@
 
   #shop {
     position: fixed; inset: 0; z-index: 20; display: none;
-    align-items: center; justify-content: center;
+    overflow-y: auto;
     background: radial-gradient(ellipse at 50% 55%, rgba(30,4,60,.7), rgba(5,1,13,.92));
     font-family: 'Orbitron', sans-serif;
+    padding: max(12px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   }
   #shop.open { display: flex; }
   #shop .panel {
     width: min(680px, 94vw); border: 2px solid rgba(47,233,255,.5); border-radius: 10px;
-    background: rgba(8,2,20,.85); padding: clamp(14px, 3vw, 28px);
+    background: rgba(8,2,20,.85); padding: clamp(12px, 3vw, 28px);
     box-shadow: 0 0 30px rgba(47,233,255,.25), inset 0 0 40px rgba(155,48,255,.12);
+    margin: auto; /* centers when it fits, scrolls when it doesn't */
   }
   #shop h2 {
     font-weight: 900; font-size: clamp(20px, 3.4vw, 34px); letter-spacing: .12em; font-style: italic;
@@ -155,19 +157,25 @@
 
   #overlay {
     position: fixed; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 14px;
+    align-items: center; justify-content: flex-start; gap: 14px;
     background: radial-gradient(ellipse at 50% 60%, rgba(20,2,40,.55), rgba(5,1,13,.88));
     font-family: 'Orbitron', sans-serif; text-align: center;
     transition: opacity .4s; z-index: 10;
     padding: 18px max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
     overflow-y: auto;
   }
+  /* flex spacers center the content when it fits, but unlike justify-content:center
+     they collapse when it doesn't — so tall content scrolls instead of clipping */
+  #overlay::before, #overlay::after { content: ''; flex: 1 0 0; }
   #overlay > * { max-width: 94vw; }
   #version-badge {
     position: absolute; bottom: max(8px, env(safe-area-inset-bottom)); right: 12px;
     font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--dim);
     letter-spacing: .15em;
   }
+  /* overlays must stay finger-scrollable despite the game's touch-action lock */
+  #overlay, #shop { touch-action: pan-y; }
+
   @media (max-width: 520px), (max-height: 480px) {
     #overlay { gap: 8px; }
     #overlay h1 { font-size: clamp(26px, 9vw, 40px); }
@@ -175,6 +183,18 @@
     #overlay .big-score { font-size: clamp(22px, 7vw, 34px); }
     #overlay .prompt { font-size: 13px; letter-spacing: .18em; }
     #overlay .controls { font-size: 9px; line-height: 1.8; letter-spacing: .08em; }
+    .mbtn { padding: 10px 20px; }
+    #shop h2 { font-size: 18px; }
+    #shop .cash-line { margin-bottom: 8px; font-size: 11px; }
+    .upgrade-row { padding: 7px 10px; margin-bottom: 6px; gap: 8px; }
+    .upgrade-row .udesc { font-size: 9px; }
+    #shop .leave { padding: 9px; }
+    #initials-input { font-size: 20px; }
+  }
+  @media (max-height: 700px) {
+    #overlay { gap: 7px; }
+    #overlay h1 { font-size: clamp(24px, 6vh, 40px); line-height: .95; }
+    #hs-table td, #hs-table th { padding: 3px 5px; }
   }
   #overlay.hidden { opacity: 0; pointer-events: none; }
   #overlay h1 {
@@ -401,7 +421,7 @@
       <tbody></tbody>
     </table>
   </div>
-  <div id="version-badge">BUILD v4</div>
+  <div id="version-badge">BUILD v5</div>
 </div>
 
 <script type="importmap">
@@ -409,27 +429,27 @@
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-    "./src/main.js": "./src/main.js?v=4",
-    "./src/sky.js": "./src/sky.js?v=4",
-    "./src/road.js": "./src/road.js?v=4",
-    "./src/biomes.js": "./src/biomes.js?v=4",
-    "./src/assets.js": "./src/assets.js?v=4",
-    "./src/player.js": "./src/player.js?v=4",
-    "./src/input.js": "./src/input.js?v=4",
-    "./src/traffic.js": "./src/traffic.js?v=4",
-    "./src/obstacles.js": "./src/obstacles.js?v=4",
-    "./src/scenery.js": "./src/scenery.js?v=4",
-    "./src/hud.js": "./src/hud.js?v=4",
-    "./src/upgrades.js": "./src/upgrades.js?v=4",
-    "./src/checkpoints.js": "./src/checkpoints.js?v=4",
-    "./src/pickups.js": "./src/pickups.js?v=4",
-    "./src/shop.js": "./src/shop.js?v=4",
-    "./src/school.js": "./src/school.js?v=4"
+    "./src/main.js": "./src/main.js?v=5",
+    "./src/sky.js": "./src/sky.js?v=5",
+    "./src/road.js": "./src/road.js?v=5",
+    "./src/biomes.js": "./src/biomes.js?v=5",
+    "./src/assets.js": "./src/assets.js?v=5",
+    "./src/player.js": "./src/player.js?v=5",
+    "./src/input.js": "./src/input.js?v=5",
+    "./src/traffic.js": "./src/traffic.js?v=5",
+    "./src/obstacles.js": "./src/obstacles.js?v=5",
+    "./src/scenery.js": "./src/scenery.js?v=5",
+    "./src/hud.js": "./src/hud.js?v=5",
+    "./src/upgrades.js": "./src/upgrades.js?v=5",
+    "./src/checkpoints.js": "./src/checkpoints.js?v=5",
+    "./src/pickups.js": "./src/pickups.js?v=5",
+    "./src/shop.js": "./src/shop.js?v=5",
+    "./src/school.js": "./src/school.js?v=5"
   }
 }
 </script>
 <!-- GAME_VERSION: bump every deploy (importmap v= params + the badge below) so
      GitHub Pages' 10-minute module cache can never mix builds -->
-<script type="module" src="./src/main.js?v=4"></script>
+<script type="module" src="./src/main.js?v=5"></script>
 </body>
 </html>
