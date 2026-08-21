@@ -3,6 +3,10 @@
 // actually performs it.
 
 const isTouchUI = () => document.body.classList.contains('tilt-on') || document.body.classList.contains('touch');
+// which control scheme is actually live right now
+const uiMode = () => document.body.classList.contains('tilt-on') ? 'tilt'
+  : (document.body.classList.contains('touch') ? 'touch' : 'desk');
+const byMode = (tilt, touch, desk) => ({ tilt, touch, desk })[uiMode()];
 
 const lessonEl = () => document.getElementById('school-lesson');
 const stepEl = () => document.getElementById('school-step');
@@ -16,18 +20,18 @@ export class School {
 
     this.lessons = [
       {
-        text: () => isTouchUI() ? 'TILT FORWARD TO ACCELERATE' : 'HOLD W TO ACCELERATE',
+        text: () => byMode('TILT FORWARD TO ACCELERATE', 'HOLD GAS TO ACCELERATE', 'HOLD W TO ACCELERATE'),
         done: () => this.d.player.speed > 30,
       },
       {
-        text: () => isTouchUI() ? 'TILT BACK TO BRAKE' : 'HOLD S TO BRAKE',
+        text: () => byMode('TILT BACK TO BRAKE', 'HOLD BRK TO BRAKE', 'HOLD S TO BRAKE'),
         done: () => {
           if (this.d.player.speed > 25) this.f.wasFast = true;
           return this.f.wasFast && this.d.player.speed < 8;
         },
       },
       {
-        text: () => isTouchUI() ? 'TILT LEFT AND RIGHT TO LEAN' : 'TAP A AND D TO LEAN LEFT AND RIGHT',
+        text: () => byMode('TILT LEFT AND RIGHT TO LEAN', 'USE THE ARROWS TO LEAN BOTH WAYS', 'TAP A AND D TO LEAN LEFT AND RIGHT'),
         done: () => {
           if (this.d.player.lean < -0.4) this.f.leanL = true;
           if (this.d.player.lean > 0.4) this.f.leanR = true;
@@ -45,7 +49,7 @@ export class School {
         },
       },
       {
-        text: () => isTouchUI() ? 'HOLD THE BST BUTTON TO BOOST' : 'HOLD SPACE TO BOOST',
+        text: () => byMode('HOLD THE BST BUTTON TO BOOST', 'HOLD THE BST BUTTON TO BOOST', 'HOLD SPACE TO BOOST'),
         setup: () => {
           this.d.upgrades.levels.boost = Math.max(1, this.d.upgrades.levels.boost);
           this.d.player.boostMeter = 1;
