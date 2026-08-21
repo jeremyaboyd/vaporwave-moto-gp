@@ -148,15 +148,13 @@ bindTouch('t-brake', 'brake');
 bindTouch('t-left', 'left');
 bindTouch('t-right', 'right');
 
-// Any tap requests tilt permission (iOS requires a user gesture). Taps that
-// aren't on interactive UI also restart after a crash. Starting a run is done
-// with the menu buttons, not tap-anywhere.
+// Any tap requests tilt permission (iOS requires a user gesture). On touch
+// devices start/restart is ONLY the PLAY button — tap-anywhere restart would
+// swallow scroll gestures on the high-score table.
 const INTERACTIVE = '.tbtn, .mbtn, #shop, #hs-panel, #initials-entry';
 window.addEventListener('touchstart', (e) => {
   if (e.target.closest && e.target.closest('.tbtn, #shop')) return;
   enableTilt();
-  if (e.target.closest && e.target.closest(INTERACTIVE)) return;
-  restartHandlers.forEach(f => f());
 }, { passive: true });
 
 // Retry tilt activation on every tap-release too — some browsers only count
@@ -165,8 +163,10 @@ window.addEventListener('touchend', () => {
   if (!tilt.active && tilt.status !== 'unavailable') enableTilt();
 }, { passive: true });
 
-// Desktop click off the UI restarts after a crash.
+// Desktop click off the UI restarts after a crash. Touch devices skip this —
+// taps synthesize mouse events, and mobile restarts only via the PLAY button.
 window.addEventListener('mousedown', (e) => {
+  if (document.body.classList.contains('touch')) return;
   if (e.target.closest && e.target.closest(INTERACTIVE)) return;
   restartHandlers.forEach(f => f());
 });
