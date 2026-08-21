@@ -103,6 +103,7 @@ export class Shop {
       if (e.code === 'Enter' || e.code === 'Escape') { this.leave(); e.preventDefault(); return; }
       const n = Number(e.key);
       if (n >= 1 && n <= UPGRADE_DEFS.length) this.buy(UPGRADE_DEFS[n - 1].key);
+      else if (n === UPGRADE_DEFS.length + 1) this.buy('repair');
     });
   }
 
@@ -161,6 +162,15 @@ export class Shop {
 
   buy(key) {
     const up = this.hooks.upgrades;
+    if (key === 'repair') {
+      const cost = up.repairCost();
+      if (!up.canRepair() || this.hooks.getCash() < cost) return;
+      this.hooks.spend(cost);
+      up.repairArmor();
+      this.hud.toast(`ARMOR PATCHED — ${up.armorLeft()} CHARGE${up.armorLeft() === 1 ? '' : 'S'}`, 'money');
+      this.render();
+      return;
+    }
     if (this.freeMode) {
       if (up.maxed(key)) return;
       up.levels[key]++;
@@ -200,6 +210,23 @@ export class Shop {
       if (afford) row.addEventListener('click', () => this.buy(d.key));
       shopListEl.appendChild(row);
     });
+
+    // repair row: only offered once armor has actually taken a hit
+    if (!this.freeMode && up.canRepair()) {
+      const cost = up.repairCost();
+      const afford = cash >= cost;
+      const row = document.createElement('button');
+      row.className = 'upgrade-row' + (afford ? '' : ' disabled');
+      row.innerHTML = `
+        <span class="num">6</span>
+        <span class="info">
+          <div class="uname">REPAIR ARMOR <span class="pips">${'▮'.repeat(up.armorLeft())}${'▯'.repeat(up.armorUsed)}</span></div>
+          <div class="udesc">Restore 1 spent armor charge</div>
+        </span>
+        <span class="cost">$${cost.toLocaleString()}</span>`;
+      if (afford) row.addEventListener('click', () => this.buy('repair'));
+      shopListEl.appendChild(row);
+    }
   }
 
   rebase(shift) {
