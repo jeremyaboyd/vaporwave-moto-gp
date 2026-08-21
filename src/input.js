@@ -8,7 +8,62 @@ export const controls = {
   boost: false,
   lookX: 0,   // -1..1, mouse position relative to screen center
   lookY: 0,
+  steerAxis: null,     // analog -1..1 from tilt (null when tilt inactive)
+  throttleAxis: null,  // analog -1..1 from tilt: + accelerates, - brakes
 };
+
+// --- Accelerometer tilt (mobile) ---
+// Tilt right to steer right, tilt forward/back for throttle/brake.
+export const tilt = {
+  supported: typeof DeviceOrientationEvent !== 'undefined',
+  active: false,
+  neutralPitch: null,   // captured at run start so the holding angle is neutral
+  wantCalibrate: false,
+};
+
+const STEER_FULL = 22;    // degrees of roll for full lean
+const PITCH_FULL = 13;    // degrees from neutral for full throttle/brake
+
+function onOrientation(e) {
+  if (e.beta === null || e.gamma === null) return;
+  if (!tilt.active) {
+    tilt.active = true;
+    document.body.classList.add('tilt-on'); // swaps button UI for tilt UI
+  }
+  // remap device axes by screen rotation so landscape works too
+  const angle = (screen.orientation && screen.orientation.angle) ?? (window.orientation || 0);
+  let roll, pitch; // roll: screen-right-edge down = +; pitch: top-toward-face = +
+  switch (angle) {
+    case 90: roll = e.beta; pitch = -e.gamma; break;
+    case 180: roll = -e.gamma; pitch = -e.beta; break;
+    case 270: case -90: roll = -e.beta; pitch = e.gamma; break;
+    default: roll = e.gamma; pitch = e.beta;
+  }
+  if (tilt.wantCalibrate || tilt.neutralPitch === null) {
+    tilt.neutralPitch = pitch;
+    tilt.wantCalibrate = false;
+  }
+  controls.steerAxis = Math.max(-1, Math.min(1, roll / STEER_FULL));
+  // tilting the top away from you (pitch drops below neutral) accelerates
+  controls.throttleAxis = Math.max(-1, Math.min(1, (tilt.neutralPitch - pitch) / PITCH_FULL));
+}
+
+export async function enableTilt() {
+  if (!tilt.supported || tilt.active) return tilt.active;
+  try {
+    // iOS gates orientation events behind a permission prompt (needs a user gesture)
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      const res = await DeviceOrientationEvent.requestPermission();
+      if (res !== 'granted') return false;
+    }
+    window.addEventListener('deviceorientation', onOrientation);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function calibrateTilt() { tilt.wantCalibrate = true; }
 
 const startHandlers = [];
 const restartHandlers = [];
@@ -60,8 +115,10 @@ bindTouch('t-left', 'left');
 bindTouch('t-right', 'right');
 
 // Tap anywhere (not on a control button) starts / restarts on touch devices.
+// The same gesture requests tilt permission (iOS requires a user gesture).
 window.addEventListener('touchstart', (e) => {
-  if (e.target.closest && e.target.closest('.tbtn')) return;
+  if (e.target.closest && (e.target.closest('.tbtn') || e.target.closest('#shop'))) return;
+  enableTilt();
   startHandlers.forEach(f => f());
   restartHandlers.forEach(f => f());
 }, { passive: true });

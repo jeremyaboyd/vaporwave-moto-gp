@@ -28,8 +28,11 @@ dependencies to install.
 | **R** | Restart after a crash |
 | **1–5 / Enter / Esc** | Buy / leave, inside the shop |
 
-On touch devices, on-screen GAS / BRK / arrows appear automatically; tap
-anywhere to start or restart.
+On phones the game is tilt-driven: your first tap requests motion access
+(iOS prompts), and however you're holding the phone becomes neutral. Tilt
+right/left to steer, tilt forward for gas and back to brake, and hit the round
+BST button on the right edge to boost. Tap anywhere to start or restart. If
+tilt isn't available, on-screen GAS / BRK / arrow buttons appear instead.
 
 ## How it works
 

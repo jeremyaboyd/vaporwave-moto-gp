@@ -116,14 +116,18 @@ export class Player {
       this.boostMeter = Math.min(cap, this.boostMeter + dt / 5); // 1s of boost per 5s
     }
 
-    // --- longitudinal ---
+    // --- longitudinal (digital keys or analog tilt) ---
     const accel = ACCEL * (up ? up.accelMul() : 1) * (this.boosting ? 2 : 1);
     const brake = BRAKE * (up ? up.brakeMul() : 1);
     const maxSpeed = MAX_SPEED * (up ? up.topMul() : 1) * (this.boosting ? 1.12 : 1);
-    if (alive && (controls.accel || this.boosting)) {
-      if (this.speed < maxSpeed) this.speed = Math.min(maxSpeed, this.speed + accel * dt);
-    } else if (alive && controls.brake) {
-      this.speed -= brake * dt;
+    let throttle = controls.throttleAxis !== null
+      ? controls.throttleAxis
+      : (controls.accel ? 1 : 0) - (controls.brake ? 1 : 0);
+    if (this.boosting) throttle = 1;
+    if (alive && throttle > 0.06) {
+      if (this.speed < maxSpeed) this.speed = Math.min(maxSpeed, this.speed + accel * throttle * dt);
+    } else if (alive && throttle < -0.06) {
+      this.speed -= brake * -throttle * dt;
     } else {
       this.speed -= DRAG * dt;
     }
@@ -140,7 +144,10 @@ export class Player {
     }
 
     // --- lateral (lean) ---
-    const target = alive ? ((controls.right ? 1 : 0) - (controls.left ? 1 : 0)) : 0;
+    const steer = controls.steerAxis !== null
+      ? controls.steerAxis
+      : (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
+    const target = alive ? Math.max(-1, Math.min(1, steer)) : 0;
     this.lean += (target - this.lean) * Math.min(1, dt * 7);
     const speedFactor = Math.min(1, this.speed / 22);
     if (!this.airborne) {
@@ -197,17 +204,16 @@ export class Player {
   }
 
   updateCamera(camera, dt) {
+    // camera is locked directly behind the bike; the mouse only turns your
+    // head (shifts the gaze target), never swings the camera off-axis
     const lookX = controls.lookX;
     const lookY = controls.lookY;
-    const yaw = -lookX * 0.55; // camera orbits opposite the mouse so looking right feels right
     const dist = 8.8;
-    const height = 4.0 + lookY * 1.4;
-    const tx = this.x + Math.sin(yaw) * dist + this.lean * 1.2;
-    const tz = this.z + Math.cos(yaw) * dist;
-    const ty = this.y + height;
-    camera.position.x += (tx - camera.position.x) * Math.min(1, dt * 6);
+    const tx = this.x + this.lean * 1.1;
+    const ty = this.y + 4.0 + lookY * 1.0;
+    camera.position.x += (tx - camera.position.x) * Math.min(1, dt * 8);
     camera.position.y += (ty - camera.position.y) * Math.min(1, dt * 6);
-    camera.position.z = tz; // hard-lock forward axis so the bike never drifts out of frame
-    camera.lookAt(this.x * 0.6, this.y + 1.6 - lookY * 2.2, this.z - 26);
+    camera.position.z = this.z + dist; // hard-lock forward axis
+    camera.lookAt(this.x + lookX * 9, this.y + 1.6 - lookY * 2.2, this.z - 26);
   }
 }
