@@ -129,13 +129,11 @@ export const school = new School({
     state.phase = 'menu';
     hud.showMenu();
   },
-  // garage finale: straight into the real game with one free upgrade
+  // garage finale: straight into the real game (startRun opens the free pick)
   onGraduate: () => {
     state.tutorial = false;
     resetWorld();
     startRun();
-    state.phase = 'shop';
-    shop.enterFree();
   },
 });
 onUpdate((dt) => { if (state.phase === 'school') school.update(dt); });
@@ -195,6 +193,9 @@ function startRun() {
   state.phase = 'run';
   calibrateTilt(); // however the phone is held right now becomes neutral
   hud.hideOverlay();
+  // every run opens in the garage: pick your one free upgrade, then ride
+  state.phase = 'shop';
+  shop.enterFree();
 }
 
 const tiltStatusEl = document.getElementById('tilt-status');
