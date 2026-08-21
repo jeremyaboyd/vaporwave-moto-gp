@@ -258,6 +258,8 @@
   }
   .touch-only { display: none; }
   body.touch .touch-only { display: block; }
+  /* "PRESS ENTER/R" prompts are keyboard-speak — phones just use the buttons */
+  body.touch #overlay-prompt { display: none; }
   body.touch .desktop-only { display: none; }
   .desktop-only { display: block; }
 
@@ -421,7 +423,7 @@
       <tbody></tbody>
     </table>
   </div>
-  <div id="version-badge">BUILD v6</div>
+  <div id="version-badge">BUILD v7</div>
 </div>
 
 <script type="importmap">
@@ -429,27 +431,27 @@
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-    "./src/main.js": "./src/main.js?v=6",
-    "./src/sky.js": "./src/sky.js?v=6",
-    "./src/road.js": "./src/road.js?v=6",
-    "./src/biomes.js": "./src/biomes.js?v=6",
-    "./src/assets.js": "./src/assets.js?v=6",
-    "./src/player.js": "./src/player.js?v=6",
-    "./src/input.js": "./src/input.js?v=6",
-    "./src/traffic.js": "./src/traffic.js?v=6",
-    "./src/obstacles.js": "./src/obstacles.js?v=6",
-    "./src/scenery.js": "./src/scenery.js?v=6",
-    "./src/hud.js": "./src/hud.js?v=6",
-    "./src/upgrades.js": "./src/upgrades.js?v=6",
-    "./src/checkpoints.js": "./src/checkpoints.js?v=6",
-    "./src/pickups.js": "./src/pickups.js?v=6",
-    "./src/shop.js": "./src/shop.js?v=6",
-    "./src/school.js": "./src/school.js?v=6"
+    "./src/main.js": "./src/main.js?v=7",
+    "./src/sky.js": "./src/sky.js?v=7",
+    "./src/road.js": "./src/road.js?v=7",
+    "./src/biomes.js": "./src/biomes.js?v=7",
+    "./src/assets.js": "./src/assets.js?v=7",
+    "./src/player.js": "./src/player.js?v=7",
+    "./src/input.js": "./src/input.js?v=7",
+    "./src/traffic.js": "./src/traffic.js?v=7",
+    "./src/obstacles.js": "./src/obstacles.js?v=7",
+    "./src/scenery.js": "./src/scenery.js?v=7",
+    "./src/hud.js": "./src/hud.js?v=7",
+    "./src/upgrades.js": "./src/upgrades.js?v=7",
+    "./src/checkpoints.js": "./src/checkpoints.js?v=7",
+    "./src/pickups.js": "./src/pickups.js?v=7",
+    "./src/shop.js": "./src/shop.js?v=7",
+    "./src/school.js": "./src/school.js?v=7"
   }
 }
 </script>
 <!-- GAME_VERSION: bump every deploy (importmap v= params + the badge below) so
      GitHub Pages' 10-minute module cache can never mix builds -->
-<script type="module" src="./src/main.js?v=6"></script>
+<script type="module" src="./src/main.js?v=7"></script>
 </body>
 </html>
