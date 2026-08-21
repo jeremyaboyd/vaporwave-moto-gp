@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { createSky } from './sky.js';
 import { RoadManager } from './road.js';
 import { Player } from './player.js';
+import { Traffic } from './traffic.js';
 import { onStart, onRestart } from './input.js';
 
 export const WORLD = {
@@ -33,6 +34,8 @@ const updaters = [];
 export function onUpdate(fn) { updaters.push(fn); }
 const rebasers = [];
 export function onRebase(fn) { rebasers.push(fn); }
+const resetHandlers = [];
+export function onReset(fn) { resetHandlers.push(fn); }
 
 const sky = createSky(scene);
 
@@ -46,6 +49,10 @@ export const state = {
 
 export const road = new RoadManager(scene, WORLD, state);
 export const player = new Player(scene);
+export const traffic = new Traffic(scene, WORLD, road);
+onRebase((s) => traffic.rebase(s));
+onReset(() => traffic.reset());
+onUpdate((dt, alive) => traffic.update(dt, player, alive, () => die()));
 
 export function die() {
   if (state.phase !== 'run') return;
@@ -76,8 +83,6 @@ function resetWorld() {
   road.nextZ0 = WORLD.segmentLength * WORLD.segmentsBehind;
   for (const fn of resetHandlers) fn();
 }
-const resetHandlers = [];
-export function onReset(fn) { resetHandlers.push(fn); }
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
