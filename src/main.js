@@ -14,7 +14,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { biomeMixAt, lerpColor } from './biomes.js';
-import { onStart, onRestart } from './input.js';
+import { onStart, onRestart, calibrateTilt } from './input.js';
 
 export const WORLD = {
   roadWidth: 26,
@@ -170,6 +170,7 @@ function startRun() {
   state.zShift = 0;
   state.timeAlive = 0;
   state.phase = 'run';
+  calibrateTilt(); // however the phone is held right now becomes neutral
   hud.hideOverlay();
 }
 

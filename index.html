@@ -207,6 +207,20 @@
   #t-right { left: calc(18px + clamp(58px,11vw,84px) + 14px); bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px); }
   #t-gas   { right: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px + clamp(58px,11vw,84px) + 12px); }
   #t-boost { right: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px + (clamp(58px,11vw,84px) + 12px) * 2); }
+
+  /* tilt-sensing active: steering/throttle come from the accelerometer,
+     so only a big circular boost button remains, centered on the right edge */
+  body.tilt-on #t-left, body.tilt-on #t-right, body.tilt-on #t-gas, body.tilt-on #t-brake { display: none; }
+  body.tilt-on #t-boost {
+    right: max(16px, env(safe-area-inset-right)); top: 50%; bottom: auto; transform: translateY(-50%);
+    width: clamp(84px, 17vw, 124px); height: clamp(84px, 17vw, 124px);
+    font-size: clamp(16px, 3vw, 24px);
+    border-color: rgba(255,47,214,.75); color: var(--pink);
+    text-shadow: 0 0 10px rgba(255,47,214,.85);
+    box-shadow: 0 0 22px rgba(255,47,214,.35), inset 0 0 22px rgba(255,47,214,.15);
+  }
+  .touch-only { display: none; }
+  body.touch .touch-only { display: block; }
   #t-brake { right: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px); }
 </style>
 </head>
@@ -272,6 +286,7 @@
   <div class="controls">
     <b>W</b> ACCELERATE &nbsp; <b>S</b> BRAKE &nbsp; <b>A</b>/<b>D</b> LEAN &nbsp; <b>SPACE</b> BOOST &nbsp; <b>MOUSE</b> LOOK &nbsp; <b>R</b> RESTART<br>
     BEAT THE CLOCK &nbsp;·&nbsp; GRAB <b>$</b> &nbsp;·&nbsp; PULL INTO THE <b>NEON GARAGE</b> ON THE RIGHT SHOULDER TO UPGRADE
+    <span class="touch-only"><b>TILT</b> TO STEER &nbsp;·&nbsp; TILT FORWARD / BACK FOR GAS &amp; BRAKE &nbsp;·&nbsp; <b>BST</b> BUTTON TO BOOST</span>
   </div>
 </div>
 
