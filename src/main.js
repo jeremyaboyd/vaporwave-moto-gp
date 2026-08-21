@@ -76,7 +76,10 @@ player.groundHeightAt = (x, z) => obstacles.groundHeightAt(x, z);
 onRebase((s) => obstacles.rebase(s));
 onReset(() => obstacles.reset());
 onUpdate((dt, alive) => {
-  obstacles.update(player, alive, (o) => damage(() => obstacles.remove(o)));
+  obstacles.update(player, alive, (o) => damage(() => {
+    if (o.median) player.x = player.x < 0 ? -2.8 : 2.8; // armor bounces you off the wall
+    else obstacles.remove(o);
+  }));
   obstacles.prune(player.z);
 });
 

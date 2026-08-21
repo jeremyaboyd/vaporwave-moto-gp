@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { neonMesh, edgeMaterial } from './assets.js';
+import { neonMesh, edgeMaterial, glowQuad } from './assets.js';
 
 // Static hazards (barrels, crates, barriers — one touch kills) and ramps
 // (safe: ride up, launch, clear traffic).
@@ -73,6 +73,28 @@ function buildBarrierTemplate() {
   return g;
 }
 
+// Jersey barrier filling one segment of the median — spawned in multi-segment
+// runs so the center strip can't be ridden forever.
+function buildMedianTemplate(len) {
+  const g = new THREE.Group();
+  const wall = neonMesh(new THREE.BoxGeometry(0.75, 1.05, len), '#b9c8ff');
+  wall.position.set(0, 0.525, -len / 2);
+  g.add(wall);
+  // hot warning line along the top so it reads from a distance
+  const topGeo = new THREE.BufferGeometry();
+  topGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 1.08, 0, 0, 1.08, -len], 3));
+  g.add(new THREE.LineSegments(topGeo, edgeMaterial('#ff2fd6')));
+  // amber reflectors facing up and down the road
+  for (let z = -6; z > -len; z -= 15) {
+    const r = glowQuad(0.55, 0.18, '#ffb02f', 0.85);
+    r.position.set(0, 0.8, z);
+    g.add(r);
+  }
+  g.traverse(o => { o.userData.noDispose = true; });
+  return g;
+}
+let medianTpl = null;
+
 const rampTpl = buildRampTemplate();
 const killerTpls = [
   { tpl: buildBarrelTemplate(), halfW: 0.75, halfL: 0.75, height: 1.1 },
@@ -87,6 +109,8 @@ export class Obstacles {
     scene.add(this.group);
     this.ramps = [];
     this.killers = [];
+    this.medians = [];      // { z0, len, mesh } — solid wall down the center strip
+    this.medianRun = 0;     // segments left in the current divider run
     road.onSegment((seg, r) => this.populateSegment(seg, r));
   }
 
@@ -95,6 +119,17 @@ export class Obstacles {
     if (d < 400) return;
     const diff = Math.min(1, d / 12000);
     const { laneXs, segmentLength } = this.world;
+
+    // median dividers: sometimes the center strip walls off for a stretch
+    if (this.medianRun > 0 || Math.random() < 0.12 + diff * 0.1) {
+      if (this.medianRun <= 0) this.medianRun = 3 + Math.floor(Math.random() * 5); // 180-420m runs
+      this.medianRun--;
+      if (!medianTpl) medianTpl = buildMedianTemplate(segmentLength);
+      const mesh = medianTpl.clone();
+      mesh.position.z = seg.z0;
+      this.group.add(mesh);
+      this.medians.push({ z0: seg.z0, len: segmentLength, mesh });
+    }
 
     // ramps: only on the player's carriageway
     if (Math.random() < 0.16) {
@@ -137,6 +172,14 @@ export class Obstacles {
 
   update(player, alive, onCollide) {
     if (!alive) return;
+    // median wall: hitting it head-on at bike height is a crash
+    for (const md of this.medians) {
+      if (player.z <= md.z0 && player.z >= md.z0 - md.len &&
+          Math.abs(player.x) < 1.35 && player.y < 1.1) {
+        onCollide({ median: true });
+        break;
+      }
+    }
     for (const o of this.killers) {
       if (Math.abs(player.z - o.z) > 6) continue;
       if (Math.abs(player.x - o.x) < o.halfW + 0.6 &&
@@ -162,19 +205,29 @@ export class Obstacles {
     };
     drop(this.ramps);
     drop(this.killers);
+    for (let i = this.medians.length - 1; i >= 0; i--) {
+      if (this.medians[i].z0 - this.medians[i].len > behind) {
+        this.group.remove(this.medians[i].mesh);
+        this.medians.splice(i, 1);
+      }
+    }
   }
 
   rebase(shift) {
     for (const arr of [this.ramps, this.killers]) {
       for (const o of arr) { o.z += shift; o.mesh.position.z = o.z; }
     }
+    for (const md of this.medians) { md.z0 += shift; md.mesh.position.z = md.z0; }
   }
 
   reset() {
     for (const arr of [this.ramps, this.killers]) {
       for (const o of arr) this.group.remove(o.mesh);
     }
+    for (const md of this.medians) this.group.remove(md.mesh);
     this.ramps = [];
     this.killers = [];
+    this.medians = [];
+    this.medianRun = 0;
   }
 }
