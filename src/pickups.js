@@ -50,6 +50,7 @@ export class Pickups {
   }
 
   populateSegment(seg, road) {
+    if (road.state.tutorial) return; // riding school spawns its own cash
     const d = road.dist(seg.z0);
     if (d < 200) return;
     const { laneXs, segmentLength } = this.world;

@@ -239,6 +239,69 @@
   body.touch .touch-only { display: block; }
   body.touch .desktop-only { display: none; }
   .desktop-only { display: block; }
+
+  .menu-btns { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .mbtn {
+    padding: 13px 30px; border-radius: 8px; cursor: pointer;
+    font-family: 'Orbitron', sans-serif; font-weight: 900; letter-spacing: .22em;
+    font-size: clamp(13px, 2.2vw, 18px); color: #fff;
+    background: rgba(47,233,255,.08); border: 2px solid rgba(47,233,255,.65);
+    text-shadow: 0 0 8px rgba(47,233,255,.8);
+    box-shadow: 0 0 16px rgba(47,233,255,.2), inset 0 0 16px rgba(47,233,255,.08);
+  }
+  .mbtn.primary {
+    background: rgba(255,47,214,.14); border-color: rgba(255,47,214,.8);
+    text-shadow: 0 0 8px rgba(255,47,214,.9);
+    box-shadow: 0 0 18px rgba(255,47,214,.3), inset 0 0 16px rgba(255,47,214,.1);
+  }
+  .mbtn:hover { filter: brightness(1.35); }
+
+  #hs-panel { display: none; width: min(430px, 92vw); }
+  #hs-table {
+    width: 100%; border-collapse: collapse;
+    font-family: 'Share Tech Mono', monospace; font-size: clamp(11px, 1.6vw, 14px);
+    color: var(--cyan); text-shadow: 0 0 6px rgba(47,233,255,.5);
+  }
+  #hs-table th {
+    font-family: 'Orbitron', sans-serif; font-size: clamp(9px, 1.3vw, 11px); letter-spacing: .2em;
+    color: var(--dim); text-shadow: none; cursor: pointer; padding: 4px 6px;
+    border-bottom: 1px solid rgba(47,233,255,.3); user-select: none;
+  }
+  #hs-table th.sorted { color: var(--pink); text-shadow: 0 0 6px rgba(255,47,214,.6); }
+  #hs-table td { padding: 4px 6px; text-align: center; }
+  #hs-table tr.latest td { color: #ffd23f; text-shadow: 0 0 8px rgba(255,210,63,.7); }
+
+  #initials-entry { display: none; flex-direction: column; gap: 8px; align-items: center; }
+  #initials-input {
+    width: 5.5ch; text-align: center; padding: 6px 4px;
+    font-family: 'Orbitron', sans-serif; font-weight: 900;
+    font-size: clamp(20px, 4vw, 30px); letter-spacing: .35em; text-transform: uppercase;
+    background: rgba(255,47,214,.08); border: 2px solid rgba(255,47,214,.8); border-radius: 6px;
+    color: #fff; outline: none; caret-color: var(--pink);
+    text-shadow: 0 0 8px rgba(255,47,214,.8);
+  }
+
+  #school-prompt {
+    position: fixed; bottom: 20%; left: 50%; transform: translateX(-50%);
+    text-align: center; z-index: 6; display: none; width: 92vw; pointer-events: none;
+  }
+  #school-prompt .lesson {
+    font-family: 'Orbitron', sans-serif; font-weight: 700;
+    font-size: clamp(15px, 2.6vw, 26px); letter-spacing: .14em; color: #fff;
+    text-shadow: 0 0 10px rgba(255,255,255,.7), 0 0 30px rgba(47,233,255,.6);
+  }
+  #school-prompt .step {
+    margin-top: 6px; font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(11px, 1.6vw, 14px); color: var(--dim); letter-spacing: .2em;
+  }
+
+  #wrongway {
+    position: absolute; top: calc(max(16px, env(safe-area-inset-top)) + clamp(50px, 8vw, 84px));
+    left: 50%; transform: translateX(-50%); display: none;
+    font-family: 'Orbitron', sans-serif; font-weight: 700;
+    font-size: clamp(10px, 1.6vw, 14px); letter-spacing: .25em; color: #ffd23f;
+    text-shadow: 0 0 10px rgba(255,210,63,.8); animation: blink 1s steps(2) infinite;
+  }
   #t-brake { right: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px); }
 </style>
 </head>
@@ -270,6 +333,7 @@
     <div class="label">BOOST [SPACE]</div>
     <div class="bar"><div class="fill" id="boost-fill"></div></div>
   </div>
+  <div id="wrongway">&#9888; WRONG WAY +20%</div>
   <div id="toasts"></div>
   <div id="hud-stats">
     <div><span class="label">DISTANCE&nbsp;</span><span id="distance">0.00 KM</span></div>
@@ -286,6 +350,11 @@
   <div class="tbtn" id="t-brake">BRK</div>
 </div>
 
+<div id="school-prompt">
+  <div class="lesson" id="school-lesson"></div>
+  <div class="step" id="school-step"></div>
+</div>
+
 <div id="shop">
   <div class="panel">
     <h2>NEON GARAGE</h2>
@@ -300,14 +369,27 @@
   <h1>NEON<br>NIGHTRIDER</h1>
   <div class="sub" id="overlay-sub">INFINITE MOTO-GP STREET RUNNER</div>
   <div class="big-score" id="overlay-score" style="display:none"></div>
-  <div class="prompt" id="overlay-prompt">PRESS ENTER / TAP TO RIDE</div>
-  <div class="sub touch-only" id="tilt-status" style="font-size:11px">TILT: TAP TO ENABLE</div>
-  <div class="controls">
-    <span class="desktop-only"><b>W</b> ACCELERATE &nbsp; <b>S</b> BRAKE &nbsp; <b>A</b>/<b>D</b> LEAN &nbsp; <b>SPACE</b> BOOST &nbsp; <b>MOUSE</b> LOOK &nbsp; <b>R</b> RESTART</span>
-    <span class="touch-only"><b>TILT</b> TO STEER · TILT FORWARD / BACK FOR GAS &amp; BRAKE · <b>BST</b> TO BOOST</span>
-    BEAT THE CLOCK · GRAB <b>$</b> · PULL INTO THE <b>NEON GARAGE</b> ON THE RIGHT TO UPGRADE
+  <div class="menu-btns">
+    <button class="mbtn primary" id="btn-play">PLAY</button>
+    <button class="mbtn" id="btn-school">RIDING SCHOOL</button>
   </div>
-  <div id="version-badge">BUILD v3</div>
+  <div class="prompt" id="overlay-prompt">PRESS ENTER / TAP PLAY</div>
+  <div class="sub touch-only" id="tilt-status" style="font-size:11px">TILT: TAP TO ENABLE</div>
+  <div id="initials-entry">
+    <div class="sub" style="color:#ffd23f">TOP 5! ENTER YOUR INITIALS</div>
+    <div style="display:flex;gap:10px;align-items:center;justify-content:center">
+      <input id="initials-input" maxlength="3" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <button class="mbtn primary" id="initials-ok">OK</button>
+    </div>
+  </div>
+  <div id="hs-panel">
+    <div class="label" style="margin-bottom:6px">HIGH SCORES — CLICK A COLUMN TO SORT</div>
+    <table id="hs-table">
+      <thead><tr><th>#</th><th data-k="initials">NAME</th><th data-k="score" class="sorted">SCORE</th><th data-k="date">DATE</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div id="version-badge">BUILD v4</div>
 </div>
 
 <script type="importmap">
@@ -315,26 +397,27 @@
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-    "./src/main.js": "./src/main.js?v=3",
-    "./src/sky.js": "./src/sky.js?v=3",
-    "./src/road.js": "./src/road.js?v=3",
-    "./src/biomes.js": "./src/biomes.js?v=3",
-    "./src/assets.js": "./src/assets.js?v=3",
-    "./src/player.js": "./src/player.js?v=3",
-    "./src/input.js": "./src/input.js?v=3",
-    "./src/traffic.js": "./src/traffic.js?v=3",
-    "./src/obstacles.js": "./src/obstacles.js?v=3",
-    "./src/scenery.js": "./src/scenery.js?v=3",
-    "./src/hud.js": "./src/hud.js?v=3",
-    "./src/upgrades.js": "./src/upgrades.js?v=3",
-    "./src/checkpoints.js": "./src/checkpoints.js?v=3",
-    "./src/pickups.js": "./src/pickups.js?v=3",
-    "./src/shop.js": "./src/shop.js?v=3"
+    "./src/main.js": "./src/main.js?v=4",
+    "./src/sky.js": "./src/sky.js?v=4",
+    "./src/road.js": "./src/road.js?v=4",
+    "./src/biomes.js": "./src/biomes.js?v=4",
+    "./src/assets.js": "./src/assets.js?v=4",
+    "./src/player.js": "./src/player.js?v=4",
+    "./src/input.js": "./src/input.js?v=4",
+    "./src/traffic.js": "./src/traffic.js?v=4",
+    "./src/obstacles.js": "./src/obstacles.js?v=4",
+    "./src/scenery.js": "./src/scenery.js?v=4",
+    "./src/hud.js": "./src/hud.js?v=4",
+    "./src/upgrades.js": "./src/upgrades.js?v=4",
+    "./src/checkpoints.js": "./src/checkpoints.js?v=4",
+    "./src/pickups.js": "./src/pickups.js?v=4",
+    "./src/shop.js": "./src/shop.js?v=4",
+    "./src/school.js": "./src/school.js?v=4"
   }
 }
 </script>
 <!-- GAME_VERSION: bump every deploy (importmap v= params + the badge below) so
      GitHub Pages' 10-minute module cache can never mix builds -->
-<script type="module" src="./src/main.js?v=3"></script>
+<script type="module" src="./src/main.js?v=4"></script>
 </body>
 </html>

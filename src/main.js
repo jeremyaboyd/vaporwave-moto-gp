@@ -10,6 +10,7 @@ import { Upgrades } from './upgrades.js';
 import { Checkpoints } from './checkpoints.js';
 import { Pickups } from './pickups.js';
 import { Shop } from './shop.js';
+import { School } from './school.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -53,10 +54,11 @@ const sky = createSky(scene);
 // World-space rebase bookkeeping: distance travelled d = zShift - z.
 export const state = {
   zShift: 0,
-  phase: 'menu',       // 'menu' | 'run' | 'shop' | 'dead'
+  phase: 'menu',       // 'menu' | 'run' | 'shop' | 'school' | 'dead'
   timeAlive: 0,
   deadAt: 0,
   cash: 0,
+  tutorial: false,     // suppresses traffic/hazard/shop spawning
 };
 
 export const hud = new Hud();
@@ -102,14 +104,14 @@ shop.hooks = {
 };
 onRebase((s) => shop.rebase(s));
 onReset(() => shop.reset());
-onUpdate((dt, alive) => {
-  shop.update(player, alive);
-  if (alive && shop.open) state.phase = 'shop';
+onUpdate(() => {
+  shop.update(player, state.phase === 'run');
+  if (state.phase === 'run' && shop.open) state.phase = 'shop';
 });
 
-// checkpoint clock (only ticks while riding — the shop freezes it)
-onUpdate((dt, alive) => {
-  if (alive) {
+// checkpoint clock (only ticks in a real run — shop and school freeze it)
+onUpdate((dt) => {
+  if (state.phase === 'run') {
     const ok = checkpoints.update(dt, player, traffic, addCash);
     if (!ok) die('THE CLOCK RAN OUT');
   }
@@ -117,6 +119,26 @@ onUpdate((dt, alive) => {
   hud.setBoost(player.boostMeter, upgrades.boostCap(), player.boosting);
   hud.setArmor(upgrades.armorLeft());
 });
+
+export const school = new School({
+  player, obstacles, pickups, upgrades, hud, state, shop,
+  onExit: () => {
+    state.tutorial = false;
+    resetWorld();
+    player.reset();
+    state.phase = 'menu';
+    hud.showMenu();
+  },
+  // garage finale: straight into the real game with one free upgrade
+  onGraduate: () => {
+    state.tutorial = false;
+    resetWorld();
+    startRun();
+    state.phase = 'shop';
+    shop.enterFree();
+  },
+});
+onUpdate((dt) => { if (state.phase === 'school') school.update(dt); });
 
 attachScenery(road, WORLD);
 
@@ -129,7 +151,7 @@ onUpdate(() => {
   if (biomeNameEl.textContent !== mix.name) biomeNameEl.textContent = mix.name;
 });
 
-onUpdate((dt, alive) => hud.update(dt, player, traffic, alive, state.timeAlive));
+onUpdate((dt) => hud.update(dt, player, traffic, state.phase === 'run', state.timeAlive));
 
 export function addCash(n, source) {
   state.cash += n;
@@ -160,6 +182,7 @@ export function damage(removeEntity) {
 }
 
 function startRun() {
+  state.tutorial = false;
   player.reset();
   hud.reset();
   upgrades.reset();
@@ -183,14 +206,41 @@ onTiltStatus((s) => {
   if (tiltStatusEl && label) tiltStatusEl.textContent = label;
 });
 
-onStart(() => { if (state.phase === 'menu') startRun(); });
+function startSchool() {
+  state.tutorial = true;
+  resetWorld();
+  player.reset();
+  hud.reset();
+  upgrades.reset();
+  checkpoints.reset();
+  state.cash = 0;
+  hud.setCash(0, false);
+  state.zShift = 0;
+  state.timeAlive = 0;
+  state.phase = 'school';
+  calibrateTilt();
+  hud.hideOverlay();
+  school.start();
+}
+
+document.getElementById('btn-play').addEventListener('click', () => {
+  if (state.phase === 'menu') { resetWorld(); startRun(); }
+  else if (state.phase === 'dead' && !hud.enteringInitials) { resetWorld(); startRun(); }
+});
+document.getElementById('btn-school').addEventListener('click', () => {
+  if (state.phase === 'menu' || (state.phase === 'dead' && !hud.enteringInitials)) startSchool();
+});
+
+onStart(() => { if (state.phase === 'menu') { resetWorld(); startRun(); } });
 onRestart(() => {
   // small delay so a panicked R/tap at the moment of death doesn't skip the score screen
-  if (state.phase === 'dead' && performance.now() - state.deadAt > 700) {
+  if (state.phase === 'dead' && !hud.enteringInitials && performance.now() - state.deadAt > 700) {
     resetWorld();
     startRun();
   }
 });
+
+hud.showMenu();
 
 // Full world rebuild on restart: nuke all segments so traffic/obstacles respawn.
 function resetWorld() {
@@ -225,10 +275,11 @@ function frame() {
   const dt = Math.min(clock.getDelta(), 1 / 20);
 
   const alive = state.phase === 'run';
+  const riding = alive || state.phase === 'school';
   if (alive) state.timeAlive += dt;
 
   if (state.phase !== 'menu') {
-    player.update(dt, alive);
+    player.update(dt, riding);
     player.updateCamera(camera, dt);
   } else {
     // slow cinematic drift on the menu
@@ -250,7 +301,7 @@ function frame() {
     for (const fn of rebasers) fn(REBASE_SHIFT);
   }
 
-  for (const fn of updaters) fn(dt, alive);
+  for (const fn of updaters) fn(dt, riding);
   sky.update(camera);
   if (composer) composer.render();
   else renderer.render(scene, camera);

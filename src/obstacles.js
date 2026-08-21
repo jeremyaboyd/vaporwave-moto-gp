@@ -114,7 +114,17 @@ export class Obstacles {
     road.onSegment((seg, r) => this.populateSegment(seg, r));
   }
 
+  spawnRamp(x, z) {
+    const mesh = rampTpl.clone();
+    mesh.position.set(x, 0, z);
+    this.group.add(mesh);
+    const rp = { mesh, x, z };
+    this.ramps.push(rp);
+    return rp;
+  }
+
   populateSegment(seg, road) {
+    if (road.state.tutorial) return; // riding school: hazards off, ramps manual
     const d = road.dist(seg.z0);
     if (d < 400) return;
     const diff = Math.min(1, d / 12000);

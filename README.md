@@ -48,7 +48,13 @@ tilt isn't available, on-screen GAS / BRK / arrow buttons appear instead.
 - **Obstacles & ramps** — `obstacles.js` places barrels, crates, and barriers
   (one touch kills) plus ramps that launch you with speed-dependent air.
 - **Scoring** — distance × speed multiplier, +150 per near miss, +400/s
-  airborne. High score persists in `localStorage`.
+  airborne, and everything ×1.2 while riding the oncoming carriageway (watch
+  for the WRONG WAY indicator). Top-5 high scores persist in `localStorage`
+  with arcade-style initials entry, sortable by name, score, or date.
+- **Riding School** — from the splash menu: an empty road where prompts teach
+  each control (throttle, brakes, leaning, ramps, boost, cash). Graduation is
+  pulling into a Neon Garage, which drops you into a real run with one free
+  upgrade of your choice.
 - **Checkpoints** — the road is cut into 600 m sections; reach each checkpoint
   before the clock hits zero (limits tighten as you go). Sections grade you:
   avg speed over 150 km/h, 5+ near misses, and 1.5 s+ of air each pay cash.

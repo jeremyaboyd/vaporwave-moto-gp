@@ -148,12 +148,14 @@ bindTouch('t-brake', 'brake');
 bindTouch('t-left', 'left');
 bindTouch('t-right', 'right');
 
-// Tap anywhere (not on a control button) starts / restarts on touch devices.
-// The same gesture requests tilt permission (iOS requires a user gesture).
+// Any tap requests tilt permission (iOS requires a user gesture). Taps that
+// aren't on interactive UI also restart after a crash. Starting a run is done
+// with the menu buttons, not tap-anywhere.
+const INTERACTIVE = '.tbtn, .mbtn, #shop, #hs-panel, #initials-entry';
 window.addEventListener('touchstart', (e) => {
-  if (e.target.closest && (e.target.closest('.tbtn') || e.target.closest('#shop'))) return;
+  if (e.target.closest && e.target.closest('.tbtn, #shop')) return;
   enableTilt();
-  startHandlers.forEach(f => f());
+  if (e.target.closest && e.target.closest(INTERACTIVE)) return;
   restartHandlers.forEach(f => f());
 }, { passive: true });
 
@@ -163,5 +165,8 @@ window.addEventListener('touchend', () => {
   if (!tilt.active && tilt.status !== 'unavailable') enableTilt();
 }, { passive: true });
 
-// Click also starts (desktop menu).
-window.addEventListener('mousedown', () => startHandlers.forEach(f => f()));
+// Desktop click off the UI restarts after a crash.
+window.addEventListener('mousedown', (e) => {
+  if (e.target.closest && e.target.closest(INTERACTIVE)) return;
+  restartHandlers.forEach(f => f());
+});
