@@ -5,6 +5,7 @@ import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Obstacles } from './obstacles.js';
 import { attachScenery } from './scenery.js';
+import { Hud } from './hud.js';
 import { biomeMixAt, lerpColor } from './biomes.js';
 import { onStart, onRestart } from './input.js';
 
@@ -77,18 +78,24 @@ onUpdate(() => {
   if (biomeNameEl.textContent !== mix.name) biomeNameEl.textContent = mix.name;
 });
 
+onUpdate((dt, alive) => hud.update(dt, player, traffic, alive, state.timeAlive));
+
+export const hud = new Hud();
+
 export function die() {
   if (state.phase !== 'run') return;
   state.phase = 'dead';
   state.deadAt = performance.now();
+  hud.showDeath(hud.score);
 }
 
 function startRun() {
   player.reset();
+  hud.reset();
   state.zShift = 0;
   state.timeAlive = 0;
   state.phase = 'run';
-  document.getElementById('overlay').classList.add('hidden');
+  hud.hideOverlay();
 }
 
 onStart(() => { if (state.phase === 'menu') startRun(); });
