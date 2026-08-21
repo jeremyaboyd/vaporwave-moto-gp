@@ -6,6 +6,9 @@ import { Traffic } from './traffic.js';
 import { Obstacles } from './obstacles.js';
 import { attachScenery } from './scenery.js';
 import { Hud } from './hud.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { biomeMixAt, lerpColor } from './biomes.js';
 import { onStart, onRestart } from './input.js';
 
@@ -114,10 +117,22 @@ function resetWorld() {
   for (const fn of resetHandlers) fn();
 }
 
+// Neon bloom (desktop only — mobile GPUs get the raw render for 60fps)
+const useBloom = !matchMedia('(pointer: coarse)').matches;
+let composer = null;
+if (useBloom) {
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight), 0.75, 0.55, 0.12);
+  composer.addPass(bloom);
+}
+
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  if (composer) composer.setSize(window.innerWidth, window.innerHeight);
 });
 
 // --- Game loop ---
@@ -155,6 +170,7 @@ function frame() {
 
   for (const fn of updaters) fn(dt, alive);
   sky.update(camera);
-  renderer.render(scene, camera);
+  if (composer) composer.render();
+  else renderer.render(scene, camera);
 }
 frame();

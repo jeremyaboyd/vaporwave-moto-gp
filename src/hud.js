@@ -45,6 +45,9 @@ export class Hud {
       }
     }
     scoreEl.textContent = Math.floor(this.score).toLocaleString();
+    if (!alive && overlayScore.style.display === 'block') {
+      overlayScore.textContent = 'SCORE ' + Math.floor(this.score).toLocaleString();
+    }
     speedEl.textContent = player.kmh;
     distEl.textContent = (player.distance / 1000).toFixed(2) + ' KM';
     timeEl.textContent = formatTime(timeAlive);

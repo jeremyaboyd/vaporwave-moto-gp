@@ -153,9 +153,15 @@ export class Player {
 
     // --- visuals ---
     this.mesh.position.set(this.x, this.y, this.z);
-    this.mesh.rotation.z = -this.lean * 0.55;
-    this.mesh.rotation.x = this.airborne ? Math.min(0.35, this.vy * -0.02) : 0;
-    this.mesh.rotation.y = -this.lean * 0.18;
+    if (alive) {
+      this.mesh.rotation.z = -this.lean * 0.55;
+      this.mesh.rotation.x = this.airborne ? Math.min(0.35, this.vy * -0.02) : 0;
+      this.mesh.rotation.y = -this.lean * 0.18;
+    } else if (this.speed > 1) {
+      // crash tumble: slide and spin out while coasting to a stop
+      this.mesh.rotation.z += dt * 9;
+      this.mesh.rotation.y += dt * 4;
+    }
   }
 
   updateCamera(camera, dt) {
