@@ -83,6 +83,7 @@ export class Shop {
     this.hooks = { getCash: () => 0, spend: () => {}, upgrades: null, onLeave: () => {} };
 
     road.onSegment((seg, r) => {
+      if (r.state.tutorial) return;
       const len = 60;
       const dStart = r.dist(seg.z0);
       const dEnd = r.dist(seg.z0 - len);
@@ -125,6 +126,16 @@ export class Shop {
     }
   }
 
+  // manually place a garage (riding school finale)
+  spawnAt(z) {
+    const mesh = shopTpl.clone();
+    mesh.position.z = z;
+    this.group.add(mesh);
+    const s = { z, used: false, warned: true, mesh };
+    this.shops.push(s);
+    return s;
+  }
+
   enter(player) {
     this.open = true;
     player.speed = 0;
@@ -132,15 +143,32 @@ export class Shop {
     shopEl.classList.add('open');
   }
 
+  // graduation gift: menu opens with every upgrade free — one pick, then ride
+  enterFree() {
+    this.freeMode = true;
+    this.open = true;
+    this.render();
+    shopEl.classList.add('open');
+  }
+
   leave() {
     if (!this.open) return;
     this.open = false;
+    this.freeMode = false;
     shopEl.classList.remove('open');
     this.hooks.onLeave();
   }
 
   buy(key) {
     const up = this.hooks.upgrades;
+    if (this.freeMode) {
+      if (up.maxed(key)) return;
+      up.levels[key]++;
+      this.freeMode = false;
+      this.hud.toast(`${up.def(key).name} LV1 — ON THE HOUSE`, 'money');
+      this.leave();
+      return;
+    }
     const cost = up.buy(key, this.hooks.getCash());
     if (cost < 0) return;
     this.hooks.spend(cost);
@@ -151,13 +179,15 @@ export class Shop {
   render() {
     const up = this.hooks.upgrades;
     const cash = this.hooks.getCash();
-    shopCashEl.textContent = `CASH $${cash.toLocaleString()} — CLOCK PAUSED`;
+    shopCashEl.textContent = this.freeMode
+      ? 'GRADUATION GIFT — PICK 1 UPGRADE, FREE'
+      : `CASH $${cash.toLocaleString()} — CLOCK PAUSED`;
     shopListEl.innerHTML = '';
     UPGRADE_DEFS.forEach((d, i) => {
       const lvl = up.levels[d.key];
       const maxed = up.maxed(d.key);
       const cost = maxed ? 0 : up.cost(d.key);
-      const afford = !maxed && cash >= cost;
+      const afford = !maxed && (this.freeMode || cash >= cost);
       const row = document.createElement('button');
       row.className = 'upgrade-row' + (afford ? '' : ' disabled');
       row.innerHTML = `
@@ -166,7 +196,7 @@ export class Shop {
           <div class="uname">${d.name} <span class="pips">${'▮'.repeat(lvl)}${'▯'.repeat(d.max - lvl)}</span></div>
           <div class="udesc">${d.desc}</div>
         </span>
-        <span class="cost">${maxed ? 'MAX' : '$' + cost.toLocaleString()}</span>`;
+        <span class="cost">${maxed ? 'MAX' : (this.freeMode ? 'FREE' : '$' + cost.toLocaleString())}</span>`;
       if (afford) row.addEventListener('click', () => this.buy(d.key));
       shopListEl.appendChild(row);
     });
@@ -185,6 +215,7 @@ export class Shop {
 
   leaveSilently() {
     this.open = false;
+    this.freeMode = false;
     shopEl.classList.remove('open');
   }
 }

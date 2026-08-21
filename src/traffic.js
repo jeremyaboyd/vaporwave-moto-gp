@@ -69,6 +69,7 @@ export class Traffic {
   }
 
   populateSegment(seg, road) {
+    if (road.state.tutorial) return; // riding school: empty road
     const d = road.dist(seg.z0);
     if (d < 150) return; // clear runway at the start
     const density = this.densityAt(d);
