@@ -245,17 +245,9 @@
   #t-gas   { right: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px + clamp(58px,11vw,84px) + 12px); }
   #t-boost { right: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px + (clamp(58px,11vw,84px) + 12px) * 2); }
 
-  /* tilt-sensing active: steering/throttle come from the accelerometer,
-     so only a big circular boost button remains, centered on the right edge */
-  body.tilt-on #t-left, body.tilt-on #t-right, body.tilt-on #t-gas, body.tilt-on #t-brake { display: none; }
-  body.tilt-on #t-boost {
-    right: max(16px, env(safe-area-inset-right)); top: 50%; bottom: auto; transform: translateY(-50%);
-    width: clamp(84px, 17vw, 124px); height: clamp(84px, 17vw, 124px);
-    font-size: clamp(16px, 3vw, 24px);
-    border-color: rgba(255,47,214,.75); color: var(--pink);
-    text-shadow: 0 0 10px rgba(255,47,214,.85);
-    box-shadow: 0 0 22px rgba(255,47,214,.35), inset 0 0 22px rgba(255,47,214,.15);
-  }
+  /* tilt-sensing active: steering comes from the accelerometer, so the lean
+     arrows go away — gas/brake/boost stay as buttons */
+  body.tilt-on #t-left, body.tilt-on #t-right { display: none; }
   .touch-only { display: none; }
   body.touch .touch-only { display: block; }
   /* "PRESS ENTER/R" prompts are keyboard-speak — phones just use the buttons */
@@ -424,7 +416,7 @@
       <tbody></tbody>
     </table>
   </div>
-  <div id="version-badge">BUILD v10</div>
+  <div id="version-badge">BUILD v11</div>
 </div>
 
 <script type="importmap">
@@ -432,27 +424,27 @@
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-    "./src/main.js": "./src/main.js?v=10",
-    "./src/sky.js": "./src/sky.js?v=10",
-    "./src/road.js": "./src/road.js?v=10",
-    "./src/biomes.js": "./src/biomes.js?v=10",
-    "./src/assets.js": "./src/assets.js?v=10",
-    "./src/player.js": "./src/player.js?v=10",
-    "./src/input.js": "./src/input.js?v=10",
-    "./src/traffic.js": "./src/traffic.js?v=10",
-    "./src/obstacles.js": "./src/obstacles.js?v=10",
-    "./src/scenery.js": "./src/scenery.js?v=10",
-    "./src/hud.js": "./src/hud.js?v=10",
-    "./src/upgrades.js": "./src/upgrades.js?v=10",
-    "./src/checkpoints.js": "./src/checkpoints.js?v=10",
-    "./src/pickups.js": "./src/pickups.js?v=10",
-    "./src/shop.js": "./src/shop.js?v=10",
-    "./src/school.js": "./src/school.js?v=10"
+    "./src/main.js": "./src/main.js?v=11",
+    "./src/sky.js": "./src/sky.js?v=11",
+    "./src/road.js": "./src/road.js?v=11",
+    "./src/biomes.js": "./src/biomes.js?v=11",
+    "./src/assets.js": "./src/assets.js?v=11",
+    "./src/player.js": "./src/player.js?v=11",
+    "./src/input.js": "./src/input.js?v=11",
+    "./src/traffic.js": "./src/traffic.js?v=11",
+    "./src/obstacles.js": "./src/obstacles.js?v=11",
+    "./src/scenery.js": "./src/scenery.js?v=11",
+    "./src/hud.js": "./src/hud.js?v=11",
+    "./src/upgrades.js": "./src/upgrades.js?v=11",
+    "./src/checkpoints.js": "./src/checkpoints.js?v=11",
+    "./src/pickups.js": "./src/pickups.js?v=11",
+    "./src/shop.js": "./src/shop.js?v=11",
+    "./src/school.js": "./src/school.js?v=11"
   }
 }
 </script>
 <!-- GAME_VERSION: bump every deploy (importmap v= params + the badge below) so
      GitHub Pages' 10-minute module cache can never mix builds -->
-<script type="module" src="./src/main.js?v=10"></script>
+<script type="module" src="./src/main.js?v=11"></script>
 </body>
 </html>
