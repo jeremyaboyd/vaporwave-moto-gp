@@ -192,6 +192,7 @@ function startRun() {
   state.timeAlive = 0;
   state.phase = 'run';
   calibrateTilt(); // however the phone is held right now becomes neutral
+  player.snapCamera(camera); // hard cut — no visible lerp across the reset
   hud.hideOverlay();
   // every run opens in the garage: pick your one free upgrade, then ride
   state.phase = 'shop';
@@ -235,6 +236,7 @@ function startSchool() {
   state.timeAlive = 0;
   state.phase = 'school';
   calibrateTilt();
+  player.snapCamera(camera);
   hud.hideOverlay();
   school.start();
 }

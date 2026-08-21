@@ -203,6 +203,13 @@ export class Player {
     }
   }
 
+  // hard cut to the ideal chase pose — used on run start so the camera never
+  // visibly lerps across the world reset
+  snapCamera(camera) {
+    camera.position.set(this.x + this.lean * 1.1, this.y + 4.0, this.z + 8.8);
+    camera.lookAt(this.x, this.y + 1.6, this.z - 26);
+  }
+
   updateCamera(camera, dt) {
     // camera is locked directly behind the bike; the mouse only turns your
     // head (shifts the gaze target), never swings the camera off-axis

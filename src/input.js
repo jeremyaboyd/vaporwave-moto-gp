@@ -148,6 +148,9 @@ window.addEventListener('keyup', (e) => {
 });
 
 window.addEventListener('mousemove', (e) => {
+  // taps synthesize mousemove on phones, which would jerk the camera around —
+  // mouse-look is desktop-only
+  if (document.body.classList.contains('touch')) return;
   controls.lookX = (e.clientX / window.innerWidth) * 2 - 1;
   controls.lookY = (e.clientY / window.innerHeight) * 2 - 1;
 });
