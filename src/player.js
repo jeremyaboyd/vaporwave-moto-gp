@@ -171,7 +171,7 @@ export class Player {
   updateCamera(camera, dt) {
     const lookX = controls.lookX;
     const lookY = controls.lookY;
-    const yaw = lookX * 0.55;
+    const yaw = -lookX * 0.55; // camera orbits opposite the mouse so looking right feels right
     const dist = 8.8;
     const height = 4.0 + lookY * 1.4;
     const tx = this.x + Math.sin(yaw) * dist + this.lean * 1.2;
