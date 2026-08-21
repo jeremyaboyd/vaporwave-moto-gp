@@ -180,7 +180,7 @@ export class Shop {
     const up = this.hooks.upgrades;
     const cash = this.hooks.getCash();
     shopCashEl.textContent = this.freeMode
-      ? 'GRADUATION GIFT — PICK 1 UPGRADE, FREE'
+      ? 'STARTING GIFT — PICK 1 UPGRADE, FREE'
       : `CASH $${cash.toLocaleString()} — CLOCK PAUSED`;
     shopListEl.innerHTML = '';
     UPGRADE_DEFS.forEach((d, i) => {
