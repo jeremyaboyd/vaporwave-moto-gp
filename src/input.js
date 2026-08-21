@@ -174,20 +174,9 @@ bindTouch('t-brake', 'brake');
 bindTouch('t-left', 'left');
 bindTouch('t-right', 'right');
 
-// Any tap requests tilt permission (iOS requires a user gesture). On touch
-// devices start/restart is ONLY the PLAY button — tap-anywhere restart would
-// swallow scroll gestures on the high-score table.
+// On touch devices start/restart is ONLY the PLAY button — and tilt permission
+// is requested inside that button's gesture (see main.js), never on stray taps.
 const INTERACTIVE = '.tbtn, .mbtn, #shop, #hs-panel, #initials-entry';
-window.addEventListener('touchstart', (e) => {
-  if (e.target.closest && e.target.closest('.tbtn, #shop')) return;
-  if (getControlMode() !== 'buttons') enableTilt();
-}, { passive: true });
-
-// Retry tilt activation on every tap-release too — some browsers only count
-// certain gesture types as user activation for the motion permission prompt.
-window.addEventListener('touchend', () => {
-  if (!tilt.active && tilt.status !== 'unavailable' && getControlMode() !== 'buttons') enableTilt();
-}, { passive: true });
 
 // Desktop click off the UI restarts after a crash. Touch devices skip this —
 // taps synthesize mouse events, and mobile restarts only via the PLAY button.
