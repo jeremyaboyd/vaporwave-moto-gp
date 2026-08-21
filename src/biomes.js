@@ -10,7 +10,7 @@ export const BIOMES = [
     ground: '#3a0d6e', grid: '#b02fff', lane: '#2fe9ff', edge: '#ff2fd6',
     fog: '#0a0318',
     ampL: 0, ampR: 0,
-    scenery: { palm: 0.25, cactus: 0, building: 0.9, streetlight: 0.8, tower: 0.15 },
+    scenery: { palm: 0.25, cactus: 0, building: 0.9, streetlight: 0.8, tower: 0.15, bldH: 26 },
   },
   {
     name: 'DESERT HIGHWAY',
@@ -31,7 +31,7 @@ export const BIOMES = [
     ground: '#1c0b3d', grid: '#7a5cff', lane: '#ff5ecb', edge: '#2fe9ff',
     fog: '#0b0520',
     ampL: 0, ampR: 0,
-    scenery: { palm: 0.1, cactus: 0, building: 1.0, streetlight: 0.9, tower: 0.5 },
+    scenery: { palm: 0.1, cactus: 0, building: 1.0, streetlight: 0.9, tower: 0.5, bldH: 50 },
   },
   {
     name: 'NIGHT BRIDGE',

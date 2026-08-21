@@ -91,7 +91,7 @@ export class RoadManager {
   }
 
   disposeSegment(seg) {
-    seg.group.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+    seg.group.traverse(o => { if (o.geometry && !o.userData.noDispose) o.geometry.dispose(); });
     this.group.remove(seg.group);
   }
 

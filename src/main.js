@@ -4,6 +4,8 @@ import { RoadManager } from './road.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Obstacles } from './obstacles.js';
+import { attachScenery } from './scenery.js';
+import { biomeMixAt, lerpColor } from './biomes.js';
 import { onStart, onRestart } from './input.js';
 
 export const WORLD = {
@@ -62,6 +64,17 @@ onReset(() => obstacles.reset());
 onUpdate((dt, alive) => {
   obstacles.update(player, alive, () => die());
   obstacles.prune(player.z);
+});
+
+attachScenery(road, WORLD);
+
+// Fog / background follow the blended biome at the player's position.
+const biomeNameEl = document.getElementById('biome-name');
+onUpdate(() => {
+  const mix = biomeMixAt(state.zShift - player.z);
+  lerpColor(scene.fog.color, mix.a.fog, mix.b.fog, mix.t);
+  scene.background.copy(scene.fog.color).multiplyScalar(0.55);
+  if (biomeNameEl.textContent !== mix.name) biomeNameEl.textContent = mix.name;
 });
 
 export function die() {
