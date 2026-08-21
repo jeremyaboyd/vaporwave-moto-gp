@@ -17,9 +17,18 @@ export const controls = {
 export const tilt = {
   supported: typeof DeviceOrientationEvent !== 'undefined',
   active: false,
+  status: 'idle',       // idle | waiting | active | denied | unavailable
   neutralPitch: null,   // captured at run start so the holding angle is neutral
   wantCalibrate: false,
 };
+
+const tiltStatusHandlers = [];
+export function onTiltStatus(fn) { tiltStatusHandlers.push(fn); }
+function setTiltStatus(s) {
+  if (tilt.status === s) return;
+  tilt.status = s;
+  tiltStatusHandlers.forEach(f => f(s));
+}
 
 const STEER_FULL = 22;    // degrees of roll for full lean
 const PITCH_FULL = 13;    // degrees from neutral for full throttle/brake
@@ -28,7 +37,9 @@ function onOrientation(e) {
   if (e.beta === null || e.gamma === null) return;
   if (!tilt.active) {
     tilt.active = true;
+    clearTimeout(tiltWaitTimer);
     document.body.classList.add('tilt-on'); // swaps button UI for tilt UI
+    setTiltStatus('active');
   }
   // remap device axes by screen rotation so landscape works too
   const angle = (screen.orientation && screen.orientation.angle) ?? (window.orientation || 0);
@@ -48,19 +59,42 @@ function onOrientation(e) {
   controls.throttleAxis = Math.max(-1, Math.min(1, (tilt.neutralPitch - pitch) / PITCH_FULL));
 }
 
+let tiltListening = false;
+let tiltAbsListening = false;
+let tiltWaitTimer = null;
+
 export async function enableTilt() {
-  if (!tilt.supported || tilt.active) return tilt.active;
+  if (tilt.active) return true;
+  if (!tilt.supported) { setTiltStatus('unavailable'); return false; }
   try {
     // iOS gates orientation events behind a permission prompt (needs a user gesture)
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
       const res = await DeviceOrientationEvent.requestPermission();
-      if (res !== 'granted') return false;
+      if (res !== 'granted') { setTiltStatus('denied'); return false; }
     }
-    window.addEventListener('deviceorientation', onOrientation);
-    return true;
   } catch {
+    // thrown when called outside a clean user gesture — the next tap retries
+    setTiltStatus('denied');
     return false;
   }
+  if (!tiltListening) {
+    tiltListening = true;
+    window.addEventListener('deviceorientation', onOrientation);
+  }
+  setTiltStatus('waiting');
+  // no events after a moment? try the absolute variant, then fall back to buttons
+  clearTimeout(tiltWaitTimer);
+  tiltWaitTimer = setTimeout(() => {
+    if (tilt.active) return;
+    if (!tiltAbsListening) {
+      tiltAbsListening = true;
+      window.addEventListener('deviceorientationabsolute', onOrientation);
+    }
+    tiltWaitTimer = setTimeout(() => {
+      if (!tilt.active) setTiltStatus('unavailable');
+    }, 1500);
+  }, 1500);
+  return true;
 }
 
 export function calibrateTilt() { tilt.wantCalibrate = true; }
@@ -121,6 +155,12 @@ window.addEventListener('touchstart', (e) => {
   enableTilt();
   startHandlers.forEach(f => f());
   restartHandlers.forEach(f => f());
+}, { passive: true });
+
+// Retry tilt activation on every tap-release too — some browsers only count
+// certain gesture types as user activation for the motion permission prompt.
+window.addEventListener('touchend', () => {
+  if (!tilt.active && tilt.status !== 'unavailable') enableTilt();
 }, { passive: true });
 
 // Click also starts (desktop menu).

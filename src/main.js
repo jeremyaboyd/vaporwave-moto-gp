@@ -14,7 +14,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { biomeMixAt, lerpColor } from './biomes.js';
-import { onStart, onRestart, calibrateTilt } from './input.js';
+import { onStart, onRestart, calibrateTilt, onTiltStatus } from './input.js';
 
 export const WORLD = {
   roadWidth: 26,
@@ -173,6 +173,12 @@ function startRun() {
   calibrateTilt(); // however the phone is held right now becomes neutral
   hud.hideOverlay();
 }
+
+onTiltStatus((s) => {
+  if (s === 'active') { hud.toast('TILT CONTROLS ACTIVE', 'money'); calibrateTilt(); }
+  else if (s === 'denied') hud.toast('MOTION ACCESS DENIED — TAP TO RETRY', 'warn');
+  else if (s === 'unavailable') hud.toast('NO TILT SENSOR — USING BUTTONS', 'warn');
+});
 
 onStart(() => { if (state.phase === 'menu') startRun(); });
 onRestart(() => {
