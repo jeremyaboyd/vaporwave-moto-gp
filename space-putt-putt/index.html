@@ -48,7 +48,7 @@
     border:2px solid var(--ink);border-radius:10px;padding:4px 12px;margin:6px 0}
   .btnrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
   #hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;
-    align-items:flex-start;padding:10px 12px;z-index:5;pointer-events:none;gap:8px}
+    align-items:flex-start;padding:10px 12px;z-index:5;pointer-events:none;gap:8px;flex-wrap:wrap}
   .chip{background:var(--cream);border:3px solid var(--ink);border-radius:14px;
     padding:5px 13px;font-weight:800;font-size:16px;box-shadow:0 3px 0 rgba(0,0,0,.3);white-space:nowrap}
   .chip small{font-weight:600;color:#6a6a7e;font-size:12px;display:block;line-height:.9;margin-top:1px}
@@ -58,6 +58,26 @@
   #banner .panel{padding:18px 34px}
   #banner h2{font-size:30px;margin:0}
   #banner p{margin:2px 0 0}
+  #gear{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:5;
+    display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .gearbtn{font-family:'Baloo 2',cursive,sans-serif;font-weight:800;font-size:14px;
+    padding:6px 12px;border:3px solid var(--ink);border-radius:12px;cursor:pointer;
+    background:var(--cream);color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.3)}
+  .gearbtn.on{background:var(--accent);color:#fff}
+  .gearbtn.passive{cursor:default;opacity:.9}
+  .shopbux{font-family:'Baloo 2',cursive,sans-serif;font-weight:800;font-size:20px;
+    background:#fff;border:3px solid var(--ink);border-radius:12px;padding:4px 16px;
+    display:inline-block;margin:6px 0 10px}
+  .shopitem{display:flex;align-items:center;gap:10px;background:#fff;
+    border:2px solid var(--ink);border-radius:14px;padding:8px 12px;margin:8px 0;text-align:left}
+  .shopitem .ico{font-size:26px}
+  .shopitem .info{flex:1}
+  .shopitem .info b{font-size:16px}
+  .shopitem .info span{display:block;font-family:'Patrick Hand',cursive;font-size:14px;
+    color:#5a5a6e;line-height:1.15}
+  .shopitem .own{font-family:'Patrick Hand',cursive;font-size:14px;color:#5a5a6e;white-space:nowrap}
+  .shopitem button{font-size:14px;padding:6px 12px;white-space:nowrap}
+  .shopitem button:disabled{opacity:.45;cursor:not-allowed;transform:none}
   #toast{position:fixed;left:50%;bottom:11%;transform:translateX(-50%);z-index:6;pointer-events:none;
     font-family:'Patrick Hand',cursive;font-size:20px;color:#fff;background:rgba(20,26,51,.85);
     border:2px solid rgba(255,255,255,.35);border-radius:12px;padding:6px 16px;opacity:0;transition:opacity .3s}
@@ -69,10 +89,12 @@
 <canvas id="game"></canvas>
 
 <div id="hud" class="hidden">
-  <div class="chip" id="hudHole">HOLE 1<small>of 9</small></div>
-  <div class="chip" id="hudPar">PAR 2<small>strokes 0</small></div>
+  <div class="chip" id="hudHole">SECTOR 1<small>of 9</small></div>
+  <div class="chip" id="hudPar">PARSEC 2<small>burns 0</small></div>
+  <div class="chip" id="hudBux">✦0<small>StarBux</small></div>
   <div class="chip" id="hudTotal">E<small>total</small></div>
 </div>
+<div id="gear" class="hidden"></div>
 
 <div id="banner"><div class="panel"><h2 id="bannerTitle">Birdie!</h2><p id="bannerSub"></p></div></div>
 <div id="toast"></div>
@@ -80,26 +102,36 @@
 <div id="titleScreen" class="overlay">
   <div class="panel">
     <h1><span class="g1">GRAVITY</span> <span class="g2">ROUTE</span> 🚀</h1>
-    <p class="tag">space putt putt · 9 holes · one solar system at a time</p>
+    <p class="tag">space putt putt · 9 sectors · one solar system at a time</p>
     <div class="howto">
       <div>🪐 Every planet &amp; sun has a gravity well that bends your shot.</div>
       <div>🎯 Drag anywhere to aim (slingshot style), release to launch.</div>
-      <div>🛑 Shots slow down and stop — chain putts across the system.</div>
-      <div>💥 Crash or drift away = stroke counts, retry from your last spot.</div>
-      <div>⭐ Fewest strokes wins. Par is on the card.</div>
+      <div>🛑 Burns slow down and stop — chain them across the sector.</div>
+      <div>💥 Crash or drift away = the burn counts, retry from your last spot.</div>
+      <div>✦ Finish under parsec to earn StarBux for the Pro Shop.</div>
     </div>
     <p style="margin-bottom:4px">Course seed:</p>
     <div class="seedrow">
       <input id="seedInput" maxlength="24" spellcheck="false" autocomplete="off">
       <button class="dice" id="btnDice" title="Random seed">🎲</button>
     </div>
-    <button class="primary" id="btnPlay" style="font-size:22px;padding:12px 38px">TEE OFF!</button>
+    <button class="primary" id="btnPlay" style="font-size:22px;padding:12px 38px">LIFT OFF!</button>
+  </div>
+</div>
+
+<div id="shopScreen" class="overlay hidden">
+  <div class="panel">
+    <h2>🛰 STARPORT PRO SHOP</h2>
+    <p class="tag">consumables — one use each, no refunds this side of the belt</p>
+    <div class="shopbux">✦ <span id="shopBux">0</span> StarBux</div>
+    <div id="shopItems"></div>
+    <button class="primary" id="btnShopDone">NEXT SECTOR ➜</button>
   </div>
 </div>
 
 <div id="scoreScreen" class="overlay hidden">
   <div class="panel">
-    <h2>🏁 Course Complete!</h2>
+    <h2>🏁 System Cleared!</h2>
     <p id="finalVerdict" style="margin:2px 0"></p>
     <table class="card" id="scoreTable"></table>
     <p style="margin:6px 0 0">This course's seed:</p>
@@ -434,9 +466,12 @@ function accelAt(hole,x,y,out){
 }
 const _acc={x:0,y:0};
 // step one physics tick; returns 'fly' | 'crash' | 'goal' | 'lost' | 'rest'
-function stepShip(hole,s,dt){
-  accelAt(hole,s.x,s.y,_acc);
-  s.vx+=_acc.x*dt;s.vy+=_acc.y*dt;
+function stepShip(hole,s,dt,noGrav){
+  if(noGrav){_acc.x=0;_acc.y=0;}
+  else{
+    accelAt(hole,s.x,s.y,_acc);
+    s.vx+=_acc.x*dt;s.vy+=_acc.y*dt;
+  }
   // "space friction" — not physical, but this is golf: shots decay and stop
   const damp=Math.exp(-SPACE_DRAG*dt);
   s.vx*=damp;s.vy*=damp;
@@ -490,14 +525,27 @@ function solveHole(hole){
 /* ============================== GAME STATE ============================== */
 const game={
   seed:'',holes:null,holeIdx:0,hole:null,
-  state:'title', // title | aim | drag | flying | crashing | holeDone | done
+  state:'title', // title | aim | drag | flying | crashing | holeDone | shop | done
   strokes:0,scores:[],pars:[],
+  money:0,items:{burner:0,bumper:0,shield:0},
+  armBurner:false,armShield:false,shotNoGrav:false,
   ship:{x:0,y:0,vx:0,vy:0,angle:-Math.PI/2},
   trail:[],particles:[],
   drag:null,preview:[],
   view:{scale:1,ox:0,oy:0},
   flightTime:0,bannerT:0,time:0
 };
+
+/* ============================== PRO SHOP ============================== */
+const BURNER_MULT=1.4;
+const SHOP_ITEMS=[
+  {key:'burner',ico:'🔥',name:'Afterburner Cell',price:5,
+   desc:'One launch at +40% thrust. Arm it before a burn.'},
+  {key:'bumper',ico:'🫧',name:'Grav Bumper',price:10,
+   desc:'Survive one planet impact — boing! — instead of losing the burn. Auto-pops.'},
+  {key:'shield',ico:'🛡️',name:'Grav Shield',price:15,
+   desc:'One launch that ignores gravity entirely. Arm it before a burn.'},
+];
 
 function fitHole(hole){
   const s=Math.min(W/hole.LW,H/hole.LH);
@@ -511,19 +559,24 @@ function startCourse(seed){
   game.seed=seed;
   game.holes=genCourse(seed);
   game.scores=[];game.pars=game.holes.map(h=>h.par);
+  game.money=0;game.items={burner:0,bumper:0,shield:0};
+  game.armBurner=false;game.armShield=false;game.shotNoGrav=false;
   startHole(0);
   document.getElementById('titleScreen').classList.add('hidden');
   document.getElementById('scoreScreen').classList.add('hidden');
+  document.getElementById('shopScreen').classList.add('hidden');
   document.getElementById('hud').classList.remove('hidden');
+  updateGear();
 }
 function startHole(i){
   game.holeIdx=i;game.hole=game.holes[i];game.strokes=0;
   fitHole(game.hole);
   game.shotOrigin={x:game.hole.start.x,y:game.hole.start.y};
   resetShip();
+  game.armBurner=false;game.armShield=false;game.shotNoGrav=false;
   game.state='aim';
-  updateHud();
-  toast('Hole '+(i+1)+' — Par '+game.hole.par,1600);
+  updateHud();updateGear();
+  toast('Sector '+(i+1)+' — Parsec '+game.hole.par,1600);
 }
 // return the ship to where the last shot was taken from (tee for shot 1)
 function resetShip(){
@@ -532,23 +585,40 @@ function resetShip(){
   game.trail.length=0;game.flightTime=0;
 }
 
+// golf words are for earthlings
 function scoreName(diff){
-  if(diff<=-3)return 'Albatross!! 🦅';
-  if(diff===-2)return 'Eagle! 🦅';
-  if(diff===-1)return 'Birdie! 🐦';
-  if(diff===0)return 'Par ⛳';
-  if(diff===1)return 'Bogey';
-  if(diff===2)return 'Double Bogey';
-  return '+'+diff+' … rough orbit';
+  if(diff<=-3)return 'SUPERNOVA!! 💥';
+  if(diff===-2)return 'Nova! 🌟';
+  if(diff===-1)return 'Comet! ☄️';
+  if(diff===0)return 'Right on Parsec 🛰️';
+  if(diff===1)return 'Space Junk 🗑️';
+  if(diff===2)return 'Black Hole 🕳️';
+  return 'Event Horizon… (+'+diff+')';
 }
 function fmtTotal(d){return d===0?'E':(d>0?'+'+d:''+d);}
 
 function updateHud(){
-  document.getElementById('hudHole').innerHTML='HOLE '+(game.holeIdx+1)+'<small>of 9</small>';
-  document.getElementById('hudPar').innerHTML='PAR '+game.hole.par+'<small>strokes '+game.strokes+'</small>';
+  document.getElementById('hudHole').innerHTML='SECTOR '+(game.holeIdx+1)+'<small>of 9</small>';
+  document.getElementById('hudPar').innerHTML='PARSEC '+game.hole.par+'<small>burns '+game.strokes+'</small>';
+  document.getElementById('hudBux').innerHTML='✦'+game.money+'<small>StarBux</small>';
   let tot=0;
   for(let i=0;i<game.scores.length;i++)tot+=game.scores[i]-game.pars[i];
   document.getElementById('hudTotal').innerHTML=fmtTotal(tot)+'<small>total</small>';
+}
+function updateGear(){
+  const g=document.getElementById('gear');
+  const it=game.items;
+  if(it.burner+it.bumper+it.shield===0){g.classList.add('hidden');g.innerHTML='';return;}
+  g.classList.remove('hidden');
+  let html='';
+  if(it.burner>0)html+='<button class="gearbtn'+(game.armBurner?' on':'')+'" id="gearBurner">🔥 Afterburner ×'+it.burner+(game.armBurner?' — ARMED':'')+'</button>';
+  if(it.shield>0)html+='<button class="gearbtn'+(game.armShield?' on':'')+'" id="gearShield">🛡️ Grav Shield ×'+it.shield+(game.armShield?' — ARMED':'')+'</button>';
+  if(it.bumper>0)html+='<span class="gearbtn passive">🫧 Bumper ×'+it.bumper+' (auto)</span>';
+  g.innerHTML=html;
+  const b=document.getElementById('gearBurner');
+  if(b)b.onclick=e=>{e.stopPropagation();game.armBurner=!game.armBurner;updateGear();computePreview();};
+  const s=document.getElementById('gearShield');
+  if(s)s.onclick=e=>{e.stopPropagation();game.armShield=!game.armShield;updateGear();computePreview();};
 }
 
 let toastTimer=null;
@@ -568,19 +638,53 @@ function banner(title,sub,ms,cb){
 function holeComplete(){
   game.state='holeDone';
   game.scores.push(game.strokes);
+  const diff=game.strokes-game.hole.par;
+  const earned=Math.max(0,-diff)*5;
+  game.money+=earned;
   updateHud();
   spawnConfetti(game.hole.goal.x,game.hole.goal.y);
-  const diff=game.strokes-game.hole.par;
-  banner(scoreName(diff),game.strokes+' stroke'+(game.strokes>1?'s':'')+' · par '+game.hole.par,1900,()=>{
-    if(game.holeIdx+1<HOLES)startHole(game.holeIdx+1);
+  let sub=game.strokes+' burn'+(game.strokes>1?'s':'')+' · parsec '+game.hole.par;
+  if(earned>0)sub+=' · +✦'+earned+' StarBux!';
+  banner(scoreName(diff),sub,1900,()=>{
+    if(game.holeIdx+1<HOLES)showShop();
     else showScorecard();
   });
+}
+
+function showShop(){
+  game.state='shop';
+  document.getElementById('gear').classList.add('hidden');
+  renderShop();
+  document.getElementById('shopScreen').classList.remove('hidden');
+}
+function renderShop(){
+  document.getElementById('shopBux').textContent=game.money;
+  const wrap=document.getElementById('shopItems');
+  wrap.innerHTML='';
+  for(const item of SHOP_ITEMS){
+    const row=document.createElement('div');row.className='shopitem';
+    row.innerHTML='<div class="ico">'+item.ico+'</div>'+
+      '<div class="info"><b>'+item.name+'</b><span>'+item.desc+'</span></div>'+
+      '<div class="own">×'+game.items[item.key]+'</div>';
+    const btn=document.createElement('button');
+    btn.textContent='✦'+item.price;
+    btn.disabled=game.money<item.price;
+    btn.onclick=()=>{
+      if(game.money<item.price)return;
+      game.money-=item.price;
+      game.items[item.key]++;
+      updateHud();renderShop();
+    };
+    row.appendChild(btn);
+    wrap.appendChild(row);
+  }
 }
 function showScorecard(){
   game.state='done';
   document.getElementById('hud').classList.add('hidden');
+  document.getElementById('gear').classList.add('hidden');
   const tbl=document.getElementById('scoreTable');
-  let h1='<tr><th>Hole</th>',h2='<tr><th>Par</th>',h3='<tr><th>You</th>';
+  let h1='<tr><th>Sector</th>',h2='<tr><th>Parsec</th>',h3='<tr><th>You</th>';
   let totP=0,totS=0;
   for(let i=0;i<HOLES;i++){
     const p=game.pars[i],s=game.scores[i];totP+=p;totS+=s;
@@ -594,7 +698,7 @@ function showScorecard(){
   const d=totS-totP;
   const verdict=d<=-6?'Interstellar legend! 🌟':d<=-3?'Gravity whisperer! 🪐':d<=0?'Smooth orbits — nice round! ✨':
     d<=4?'A respectable space round. 🚀':'The cosmos was cruel today. 💫';
-  document.getElementById('finalVerdict').textContent=verdict+' ('+fmtTotal(d)+')';
+  document.getElementById('finalVerdict').textContent=verdict+' ('+fmtTotal(d)+') · ✦'+game.money+' StarBux unspent';
   document.getElementById('finalSeed').textContent=game.seed;
   document.getElementById('scoreScreen').classList.remove('hidden');
 }
@@ -641,6 +745,11 @@ function onUp(){
   const l=launchFromDrag();
   game.drag=null;game.preview.length=0;
   if(!l){game.state='aim';return;}
+  // consume armed consumables for this burn
+  game.shotNoGrav=false;
+  if(game.armBurner&&game.items.burner>0){game.items.burner--;toast('🔥 Afterburner spent!',1200);}
+  if(game.armShield&&game.items.shield>0){game.items.shield--;game.shotNoGrav=true;toast('🛡️ Grav Shield up — gravity? never heard of her.',1500);}
+  game.armBurner=false;game.armShield=false;updateGear();
   game.strokes++;updateHud();
   game.shotOrigin={x:game.ship.x,y:game.ship.y};
   game.ship.vx=Math.cos(l.angle)*l.speed;
@@ -649,21 +758,25 @@ function onUp(){
 }
 function launchFromDrag(){
   const d=game.drag,v=game.view;
+  if(!d)return null;
   const dx=(d.sx-d.x)/v.scale,dy=(d.sy-d.y)/v.scale; // slingshot: pull back
   const len=Math.hypot(dx,dy);
   if(len<14)return null; // tap = cancel
   const power=Math.min(len,MAX_DRAG)/MAX_DRAG;
-  return{angle:Math.atan2(dy,dx),speed:MIN_LAUNCH+power*(MAX_LAUNCH-MIN_LAUNCH),power};
+  let speed=MIN_LAUNCH+power*(MAX_LAUNCH-MIN_LAUNCH);
+  if(game.armBurner&&game.items.burner>0)speed*=BURNER_MULT;
+  return{angle:Math.atan2(dy,dx),speed,power};
 }
 function computePreview(){
   game.preview.length=0;
   const l=launchFromDrag();
   if(!l)return;
   const h=game.hole;
+  const noGrav=game.armShield&&game.items.shield>0;
   const s={x:game.ship.x,y:game.ship.y,vx:Math.cos(l.angle)*l.speed,vy:Math.sin(l.angle)*l.speed};
   const steps=170;
   for(let i=0;i<steps;i++){
-    const res=stepShip(h,s,DT*1.6);
+    const res=stepShip(h,s,DT*1.6,noGrav);
     if(i%4===0)game.preview.push({x:s.x,y:s.y});
     if(res!=='fly')break;
   }
@@ -697,7 +810,8 @@ function update(dt){
     const sub=Math.max(1,Math.round(dt/DT));
     let res='fly';
     for(let i=0;i<sub;i++){
-      res=stepShip(game.hole,game.ship,DT);
+      res=stepShip(game.hole,game.ship,DT,game.shotNoGrav);
+      if(res==='crash'&&game.items.bumper>0){res=gravBump();}
       if(res!=='fly')break;
     }
     const sp=Math.hypot(game.ship.vx,game.ship.vy);
@@ -707,7 +821,7 @@ function update(dt){
     if(res==='crash'){
       spawnExplosion(game.ship.x,game.ship.y);
       game.state='crashing';
-      toast('💥 Crashed! Stroke counts — replay from your last spot.',1700);
+      toast('💥 Crashed! The burn counts — replay from your last spot.',1700);
       setTimeout(()=>{if(game.state==='crashing'){resetShip();checkPickup();}},1100);
     }else if(res==='goal'){
       holeComplete();
@@ -722,13 +836,34 @@ function update(dt){
     }
   }
 }
+// Grav Bumper: eat one planet impact, bounce off the surface instead of crashing
+function gravBump(){
+  const s=game.ship;
+  let hit=null,hd=Infinity;
+  for(const b of game.hole.bodies){
+    const d=Math.hypot(s.x-b.x,s.y-b.y)-b.radius;
+    if(d<hd){hd=d;hit=b;}
+  }
+  if(!hit)return 'crash';
+  game.items.bumper--;updateGear();
+  const nx=(s.x-hit.x)/(hd+hit.radius),ny=(s.y-hit.y)/(hd+hit.radius);
+  // place ship just off the surface, reflect velocity, keep most of the energy
+  s.x=hit.x+nx*(hit.radius+SHIP_R+2);
+  s.y=hit.y+ny*(hit.radius+SHIP_R+2);
+  const dot=s.vx*nx+s.vy*ny;
+  s.vx=(s.vx-2*dot*nx)*0.75;
+  s.vy=(s.vy-2*dot*ny)*0.75;
+  spawnConfetti(s.x,s.y);
+  toast('🫧 Grav Bumper! Boing — burn saved.',1500);
+  return 'fly';
+}
 function checkPickup(){
   const cap=game.hole.par+4;
   if(game.strokes>=cap){
-    toast('Max strokes — picking up. ✋',1500);
+    toast('✋ Mission control calls it — next sector.',1500);
     game.scores.push(cap+1);updateHud();
     setTimeout(()=>{
-      if(game.holeIdx+1<HOLES)startHole(game.holeIdx+1);else showScorecard();
+      if(game.holeIdx+1<HOLES)showShop();else showScorecard();
     },1200);
     game.state='holeDone';
   }else{
@@ -854,6 +989,10 @@ document.getElementById('btnPlay').onclick=()=>{
   const s=seedInput.value.trim()||randomSeedWord();
   seedInput.value=s;
   startCourse(s);
+};
+document.getElementById('btnShopDone').onclick=()=>{
+  document.getElementById('shopScreen').classList.add('hidden');
+  startHole(game.holeIdx+1);
 };
 document.getElementById('btnReplay').onclick=()=>startCourse(game.seed);
 document.getElementById('btnNew').onclick=()=>{
