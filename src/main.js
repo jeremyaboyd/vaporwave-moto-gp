@@ -153,6 +153,7 @@ onUpdate(() => {
   lerpColor(scene.fog.color, mix.a.fog, mix.b.fog, mix.t);
   scene.background.copy(scene.fog.color).multiplyScalar(0.55);
   if (biomeNameEl.textContent !== mix.name) biomeNameEl.textContent = mix.name;
+  audio.setBiome(mix.a.name, mix.b.name, mix.t); // soundtrack fades with the fog
 });
 
 onUpdate((dt) => hud.update(dt, player, traffic, state.phase === 'run', state.timeAlive));

@@ -89,41 +89,127 @@ function noise(t, dur, peak, cutoff, bus = musicBus) {
   s.stop(t + dur + 0.05);
 }
 
-// --- music: lookahead sequencer over an Am–F–C–G turnaround -----------------
+// --- music: one song per biome, crossfaded on the biome blend ---------------
+// All songs share one 96 BPM sixteenth-note grid so handoffs stay beat-aligned.
+// Each song plays into its own gain bus; the outgoing song fades to silence by
+// the transition midpoint before the incoming one fades up, so the keys never
+// clash out loud.
 
 const BPM = 96;
 const STEP = 60 / BPM / 4; // sixteenth
-const CHORDS = [
-  { root: 45, triad: [57, 60, 64] }, // Am
-  { root: 41, triad: [57, 60, 65] }, // F
-  { root: 48, triad: [55, 60, 64] }, // C
-  { root: 43, triad: [55, 59, 62] }, // G
-];
-let step = 0, nextT = 0;
+const SONGS = {
+  'NEON CITY': { // the original tune: bouncy Am–F–C–G with an A/B arp
+    chords: [
+      { root: 45, triad: [57, 60, 64] }, // Am
+      { root: 41, triad: [57, 60, 65] }, // F
+      { root: 48, triad: [55, 60, 64] }, // C
+      { root: 43, triad: [55, 59, 62] }, // G
+    ],
+    bassEvery: 2, pad: 0.1, arp: { wave: 'square', gain: 0.13, mode: 'ab' }, drums: 'full',
+  },
+  'DESERT HIGHWAY': { // slower-feeling Dm–Bb–F–A with a raised-third tinge
+    chords: [
+      { root: 38, triad: [57, 62, 65] }, // Dm
+      { root: 46, triad: [58, 62, 65] }, // Bb
+      { root: 41, triad: [57, 60, 65] }, // F
+      { root: 45, triad: [57, 61, 64] }, // A
+    ],
+    bassEvery: 4, pad: 0.13, arp: { wave: 'square', gain: 0.1, mode: 'ab' }, drums: 'half',
+  },
+  'COASTAL ROAD': { // sunny C–G–Am–F, triangle lead, brushed hats
+    chords: [
+      { root: 48, triad: [55, 60, 64] }, // C
+      { root: 43, triad: [55, 59, 62] }, // G
+      { root: 45, triad: [57, 60, 64] }, // Am
+      { root: 41, triad: [57, 60, 65] }, // F
+    ],
+    bassEvery: 2, pad: 0.12, arp: { wave: 'triangle', gain: 0.22, mode: 'eighths' }, drums: 'soft',
+  },
+  'DOWNTOWN': { // driving Bm–G–D–A, sixteenth arps the whole way
+    chords: [
+      { root: 47, triad: [59, 62, 66] }, // Bm
+      { root: 43, triad: [55, 59, 62] }, // G
+      { root: 38, triad: [57, 62, 66] }, // D
+      { root: 45, triad: [57, 61, 64] }, // A
+    ],
+    bassEvery: 2, pad: 0.08, arp: { wave: 'square', gain: 0.12, mode: 'drive' }, drums: 'full',
+  },
+  'NIGHT BRIDGE': { // sparse Em–C–G–D, long pads, no percussion
+    chords: [
+      { root: 40, triad: [55, 59, 64] }, // Em
+      { root: 48, triad: [55, 60, 64] }, // C
+      { root: 43, triad: [55, 59, 62] }, // G
+      { root: 38, triad: [54, 57, 62] }, // D
+    ],
+    bassEvery: 8, pad: 0.16, arp: { wave: 'triangle', gain: 0.18, mode: 'sparse' }, drums: 'none',
+  },
+};
+const DEFAULT_SONG = 'NEON CITY';
 
-function scheduleStep(step, t) {
-  const bar = Math.floor(step / 16) % 4;
+let step = 0, nextT = 0;
+let biomeA = DEFAULT_SONG, biomeB = DEFAULT_SONG, biomeT = 0;
+
+const songBuses = new Map();
+function songBus(name) {
+  let bus = songBuses.get(name);
+  if (!bus) {
+    bus = ctx.createGain();
+    bus.gain.value = 0;
+    bus.connect(musicBus);
+    songBuses.set(name, bus);
+  }
+  return bus;
+}
+
+// driven from the biome blend every frame (fog and music fade together)
+export function setBiome(a, b, t) {
+  biomeA = SONGS[a] ? a : DEFAULT_SONG;
+  biomeB = SONGS[b] ? b : DEFAULT_SONG;
+  biomeT = t;
+  if (!ctx) return;
+  // sequential fade: A is gone by t=0.5, B rises after
+  const gA = Math.min(1, Math.max(0, 1 - biomeT * 2));
+  const gB = Math.min(1, Math.max(0, biomeT * 2 - 1));
+  for (const [name, bus] of songBuses) {
+    const g = name === biomeA ? gA : name === biomeB ? gB : 0;
+    bus.gain.setTargetAtTime(g, ctx.currentTime, 0.35);
+  }
+}
+
+function scheduleSongStep(song, step, t, bus) {
+  const bar = Math.floor(step / 16) % song.chords.length;
   const phrase = Math.floor(step / 64) % 2; // 4-bar A/B alternation
   const s = step % 16;
-  const { root, triad } = CHORDS[bar];
+  const { root, triad } = song.chords[bar];
 
-  // bass: eighth notes bouncing between root octaves
-  if (s % 2 === 0) {
-    voice('triangle', midi(s % 4 === 2 ? root + 12 : root), t, STEP * 1.8, 0.5);
+  // bass: root notes bouncing up an octave mid-pattern
+  if (s % song.bassEvery === 0) {
+    const up = song.bassEvery <= 2 ? (s % 4 === 2 ? 12 : 0) : (s % 8 === 4 ? 12 : 0);
+    voice('triangle', midi(root + up), t, STEP * song.bassEvery * 0.9, 0.5, bus);
   }
   // pad: one soft sustained triad per bar
   if (s === 0) {
-    for (const n of triad) voice('triangle', midi(n), t, STEP * 15, 0.1, musicBus, 0.35);
+    for (const n of triad) voice('triangle', midi(n), t, STEP * 15, song.pad, bus, 0.35);
   }
-  // arp lead: sparse eighths in the A phrase, driving sixteenths in the B phrase
-  if (phrase === 1 || s % 2 === 0) {
-    const idx = [0, 1, 2, 1][Math.floor(s / (phrase ? 1 : 2)) % 4];
-    const oct = phrase && s >= 8 ? 24 : 12;
-    voice('square', midi(triad[idx] + oct), t, STEP * 0.9, 0.13);
+  // arp lead
+  const a = song.arp;
+  const drive = a.mode === 'drive' || (a.mode === 'ab' && phrase === 1);
+  const every = a.mode === 'sparse' ? 4 : drive ? 1 : 2;
+  if (s % every === 0) {
+    const idx = [0, 1, 2, 1][(s / every) % 4];
+    const oct = drive && s >= 8 ? 24 : 12;
+    voice(a.wave, midi(triad[idx] + oct), t, STEP * every * 0.9, a.gain, bus);
   }
-  // percussion: noise hats on eighths, snare thump on the backbeats
-  if (s % 2 === 0) noise(t, 0.03, 0.05, 7000);
-  if (s === 4 || s === 12) noise(t, 0.09, 0.14, 1800);
+  // percussion
+  if (song.drums === 'full') {
+    if (s % 2 === 0) noise(t, 0.03, 0.05, 7000, bus);
+    if (s === 4 || s === 12) noise(t, 0.09, 0.14, 1800, bus);
+  } else if (song.drums === 'half') {
+    if (s % 4 === 0) noise(t, 0.03, 0.04, 6000, bus);
+    if (s === 8) noise(t, 0.09, 0.13, 1600, bus);
+  } else if (song.drums === 'soft') {
+    if (s % 4 === 0) noise(t, 0.025, 0.035, 7500, bus);
+  }
 }
 
 function startMusic() {
@@ -132,7 +218,9 @@ function startMusic() {
   setInterval(() => {
     if (ctx.state !== 'running') { nextT = ctx.currentTime + 0.05; return; }
     while (nextT < ctx.currentTime + 0.12) {
-      scheduleStep(step, nextT);
+      // only songs whose bus is (becoming) audible get scheduled
+      if (biomeT < 0.55) scheduleSongStep(SONGS[biomeA], step, nextT, songBus(biomeA));
+      if (biomeT > 0.45) scheduleSongStep(SONGS[biomeB], step, nextT, songBus(biomeB));
       step++;
       nextT += STEP;
     }
