@@ -240,6 +240,13 @@
     box-shadow: 0 0 14px rgba(47,233,255,.25), inset 0 0 14px rgba(47,233,255,.12);
   }
   .tbtn:active, .tbtn.held { background: rgba(255,47,214,.18); border-color: rgba(255,47,214,.8); color: var(--pink); }
+  /* neon chevron glyphs — stroked like the wireframe world, glow follows the
+     button's current color so the pink held state carries through */
+  .tbtn svg {
+    width: 46%; height: auto; fill: none; stroke: currentColor;
+    stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 0 5px currentColor);
+  }
   #t-left  { left: 18px;  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px); }
   #t-right { left: calc(18px + clamp(58px,11vw,84px) + 14px); bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px); }
   #t-gas   { right: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px + clamp(58px,11vw,84px) + 12px); }
@@ -368,8 +375,8 @@
 </div>
 
 <div id="touch-controls">
-  <div class="tbtn" id="t-left">&#9664;</div>
-  <div class="tbtn" id="t-right">&#9654;</div>
+  <div class="tbtn" id="t-left"><svg viewBox="0 0 32 24" aria-label="lean left"><path d="M15 3 L5 12 L15 21 M27 3 L17 12 L27 21"/></svg></div>
+  <div class="tbtn" id="t-right"><svg viewBox="0 0 32 24" aria-label="lean right"><path d="M17 3 L27 12 L17 21 M5 3 L15 12 L5 21"/></svg></div>
   <div class="tbtn" id="t-boost">BST</div>
   <div class="tbtn" id="t-gas">GAS</div>
   <div class="tbtn" id="t-brake">BRK</div>
@@ -416,7 +423,7 @@
       <tbody></tbody>
     </table>
   </div>
-  <div id="version-badge">BUILD v14</div>
+  <div id="version-badge">BUILD v15</div>
 </div>
 
 <script type="importmap">
@@ -424,27 +431,28 @@
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-    "./src/main.js": "./src/main.js?v=14",
-    "./src/sky.js": "./src/sky.js?v=14",
-    "./src/road.js": "./src/road.js?v=14",
-    "./src/biomes.js": "./src/biomes.js?v=14",
-    "./src/assets.js": "./src/assets.js?v=14",
-    "./src/player.js": "./src/player.js?v=14",
-    "./src/input.js": "./src/input.js?v=14",
-    "./src/traffic.js": "./src/traffic.js?v=14",
-    "./src/obstacles.js": "./src/obstacles.js?v=14",
-    "./src/scenery.js": "./src/scenery.js?v=14",
-    "./src/hud.js": "./src/hud.js?v=14",
-    "./src/upgrades.js": "./src/upgrades.js?v=14",
-    "./src/checkpoints.js": "./src/checkpoints.js?v=14",
-    "./src/pickups.js": "./src/pickups.js?v=14",
-    "./src/shop.js": "./src/shop.js?v=14",
-    "./src/school.js": "./src/school.js?v=14"
+    "./src/main.js": "./src/main.js?v=15",
+    "./src/sky.js": "./src/sky.js?v=15",
+    "./src/road.js": "./src/road.js?v=15",
+    "./src/biomes.js": "./src/biomes.js?v=15",
+    "./src/assets.js": "./src/assets.js?v=15",
+    "./src/player.js": "./src/player.js?v=15",
+    "./src/input.js": "./src/input.js?v=15",
+    "./src/traffic.js": "./src/traffic.js?v=15",
+    "./src/obstacles.js": "./src/obstacles.js?v=15",
+    "./src/scenery.js": "./src/scenery.js?v=15",
+    "./src/hud.js": "./src/hud.js?v=15",
+    "./src/upgrades.js": "./src/upgrades.js?v=15",
+    "./src/checkpoints.js": "./src/checkpoints.js?v=15",
+    "./src/pickups.js": "./src/pickups.js?v=15",
+    "./src/shop.js": "./src/shop.js?v=15",
+    "./src/school.js": "./src/school.js?v=15",
+    "./src/audio.js": "./src/audio.js?v=15"
   }
 }
 </script>
 <!-- GAME_VERSION: bump every deploy (importmap v= params + the badge below) so
      GitHub Pages' 10-minute module cache can never mix builds -->
-<script type="module" src="./src/main.js?v=14"></script>
+<script type="module" src="./src/main.js?v=15"></script>
 </body>
 </html>

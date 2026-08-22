@@ -65,7 +65,9 @@ export class Traffic {
   }
 
   densityAt(d) {
-    return Math.min(0.85, 0.28 + d / 14000); // ramps up over ~8 km
+    // sqrt front-loads the ramp: most of the density arrives in the first
+    // few km, full 0.85 by ~8 km
+    return Math.min(0.85, 0.28 + 0.57 * Math.sqrt(d / 8000));
   }
 
   populateSegment(seg, road) {

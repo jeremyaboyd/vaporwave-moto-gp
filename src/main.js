@@ -16,6 +16,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { biomeMixAt, lerpColor } from './biomes.js';
 import { onStart, onRestart, calibrateTilt, onTiltStatus, getControlMode, setControlMode, enableTilt } from './input.js';
+import * as audio from './audio.js';
 
 export const WORLD = {
   roadWidth: 26,
@@ -152,13 +153,20 @@ onUpdate(() => {
   lerpColor(scene.fog.color, mix.a.fog, mix.b.fog, mix.t);
   scene.background.copy(scene.fog.color).multiplyScalar(0.55);
   if (biomeNameEl.textContent !== mix.name) biomeNameEl.textContent = mix.name;
+  audio.setBiome(mix.a.name, mix.b.name, mix.t); // soundtrack fades with the fog
 });
 
 onUpdate((dt) => hud.update(dt, player, traffic, state.phase === 'run', state.timeAlive));
 
+// engine hum follows speed; M toggles all audio
+onUpdate((dt, riding) => audio.setEngine(Math.min(1, player.speed / 86), player.boosting, riding));
+audio.onMuteChange((m) => hud.toast(m ? 'AUDIO MUTED [M]' : 'AUDIO ON [M]', 'money'));
+
 export function addCash(n, source) {
   state.cash += n;
   hud.setCash(state.cash, true);
+  if (source === 'pickup') audio.coin();
+  else audio.fanfare();
   if (source !== 'pickup' && source != null) hud.toast(`+$${n}`, 'money');
 }
 
@@ -169,6 +177,7 @@ export function die(reason) {
   state.deathT = 0;
   state.deathCinematic = true;
   state.deathReason = reason;
+  audio.crash();
   player.startCrash();
   // the game-over screen waits for the crash cinematic (see updateDeathCamera)
 }
@@ -201,6 +210,7 @@ export function damage(removeEntity) {
     removeEntity();
     player.invulnT = 1.6;
     player.speed *= 0.45;
+    audio.armorHit();
     hud.toast(`ARMOR TOOK THE HIT — ${upgrades.armorLeft()} LEFT`, 'warn');
     hud.setArmor(upgrades.armorLeft());
   } else {
