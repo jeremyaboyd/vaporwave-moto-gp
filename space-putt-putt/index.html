@@ -527,7 +527,7 @@ const game={
   seed:'',holes:null,holeIdx:0,hole:null,
   state:'title', // title | aim | drag | flying | crashing | holeDone | shop | done
   strokes:0,scores:[],pars:[],
-  money:0,items:{burner:0,bumper:0,shield:0},
+  money:0,items:{burner:0,bumper:0,shield:0},drinks:[],
   armBurner:false,armShield:false,shotNoGrav:false,
   ship:{x:0,y:0,vx:0,vy:0,angle:-Math.PI/2},
   trail:[],particles:[],
@@ -545,7 +545,23 @@ const SHOP_ITEMS=[
    desc:'Survive one planet impact — boing! — instead of losing the burn. Auto-pops.'},
   {key:'shield',ico:'🛡️',name:'Grav Shield',price:15,
    desc:'One launch that ignores gravity entirely. Arm it before a burn.'},
+  {key:'ale',ico:'🍺',name:'Astro Ale',price:4,
+   desc:'Loosens the arm — see more of your line for 2 sectors. Stacks… to a point, pilot.'},
 ];
+// Buzz curve: 1-2 ales = longer preview (sweet spot), 3 = wearing thin,
+// 4+ = seeing double, worse than sober. Wobble kicks in when over-served.
+function buzzLevel(){return game.drinks.length;}
+function buzzMult(){const n=buzzLevel();return n===0?1:n===1?1.6:n===2?2.2:n===3?1.1:0.45;}
+function buzzWobble(){const n=buzzLevel();return n>=3?(n-2)*4:0;}
+function buzzLabel(){const n=buzzLevel();
+  return n===1?'🍺 Buzzed ×1':n===2?'🍺 Loose ×2':n===3?'🥴 Tipsy ×3':'🥴 Seeing double ×'+n;}
+function drinkAle(){
+  game.drinks.push({left:2});
+  const n=buzzLevel();
+  toast(n<=2?'🍺 Glug… the line looks clearer somehow.':
+        n===3?'🍺 Glug… was that one too many?':
+        '🥴 Glug… the stars are spinning.',1700);
+}
 
 function fitHole(hole){
   const s=Math.min(W/hole.LW,H/hole.LH);
@@ -559,7 +575,7 @@ function startCourse(seed){
   game.seed=seed;
   game.holes=genCourse(seed);
   game.scores=[];game.pars=game.holes.map(h=>h.par);
-  game.money=0;game.items={burner:0,bumper:0,shield:0};
+  game.money=0;game.items={burner:0,bumper:0,shield:0};game.drinks=[];
   game.armBurner=false;game.armShield=false;game.shotNoGrav=false;
   startHole(0);
   document.getElementById('titleScreen').classList.add('hidden');
@@ -569,6 +585,11 @@ function startCourse(seed){
   updateGear();
 }
 function startHole(i){
+  // the buzz wears off: each ale lasts 2 sectors
+  const hadBuzz=buzzLevel();
+  for(const d of game.drinks)d.left--;
+  game.drinks=game.drinks.filter(d=>d.left>0);
+  if(hadBuzz>0&&buzzLevel()===0)toast('☕ Sober again. The line looks… honest.',1600);
   game.holeIdx=i;game.hole=game.holes[i];game.strokes=0;
   fitHole(game.hole);
   game.shotOrigin={x:game.hole.start.x,y:game.hole.start.y};
@@ -608,12 +629,13 @@ function updateHud(){
 function updateGear(){
   const g=document.getElementById('gear');
   const it=game.items;
-  if(it.burner+it.bumper+it.shield===0){g.classList.add('hidden');g.innerHTML='';return;}
+  if(it.burner+it.bumper+it.shield+buzzLevel()===0){g.classList.add('hidden');g.innerHTML='';return;}
   g.classList.remove('hidden');
   let html='';
   if(it.burner>0)html+='<button class="gearbtn'+(game.armBurner?' on':'')+'" id="gearBurner">🔥 Afterburner ×'+it.burner+(game.armBurner?' — ARMED':'')+'</button>';
   if(it.shield>0)html+='<button class="gearbtn'+(game.armShield?' on':'')+'" id="gearShield">🛡️ Grav Shield ×'+it.shield+(game.armShield?' — ARMED':'')+'</button>';
   if(it.bumper>0)html+='<span class="gearbtn passive">🫧 Bumper ×'+it.bumper+' (auto)</span>';
+  if(buzzLevel()>0)html+='<span class="gearbtn passive">'+buzzLabel()+'</span>';
   g.innerHTML=html;
   const b=document.getElementById('gearBurner');
   if(b)b.onclick=e=>{e.stopPropagation();game.armBurner=!game.armBurner;updateGear();computePreview();};
@@ -663,16 +685,18 @@ function renderShop(){
   wrap.innerHTML='';
   for(const item of SHOP_ITEMS){
     const row=document.createElement('div');row.className='shopitem';
+    const owned=item.key==='ale'?buzzLevel():game.items[item.key];
     row.innerHTML='<div class="ico">'+item.ico+'</div>'+
       '<div class="info"><b>'+item.name+'</b><span>'+item.desc+'</span></div>'+
-      '<div class="own">×'+game.items[item.key]+'</div>';
+      '<div class="own">×'+owned+'</div>';
     const btn=document.createElement('button');
     btn.textContent='✦'+item.price;
     btn.disabled=game.money<item.price;
     btn.onclick=()=>{
       if(game.money<item.price)return;
       game.money-=item.price;
-      game.items[item.key]++;
+      if(item.key==='ale')drinkAle();
+      else game.items[item.key]++;
       updateHud();renderShop();
     };
     row.appendChild(btn);
@@ -774,7 +798,7 @@ function computePreview(){
   const h=game.hole;
   const noGrav=game.armShield&&game.items.shield>0;
   const s={x:game.ship.x,y:game.ship.y,vx:Math.cos(l.angle)*l.speed,vy:Math.sin(l.angle)*l.speed};
-  const steps=170;
+  const steps=Math.round(170*buzzMult());
   for(let i=0;i<steps;i++){
     const res=stepShip(h,s,DT*1.6,noGrav);
     if(i%4===0)game.preview.push({x:s.x,y:s.y});
@@ -938,10 +962,14 @@ function render(){
 
   // aiming preview
   if(game.state==='drag'&&game.preview.length){
+    const wob=buzzWobble();
     for(let i=0;i<game.preview.length;i++){
       const p=game.preview[i],f=1-i/game.preview.length;
+      // over-served: the line sways — it's the ale, not the physics
+      const ox=wob?Math.sin(game.time*3.2+i*0.55)*wob*(i/game.preview.length):0;
+      const oy=wob?Math.cos(game.time*2.6+i*0.4)*wob*0.6*(i/game.preview.length):0;
       ctx.fillStyle=`rgba(255,255,255,${0.15+0.65*f})`;
-      ctx.beginPath();ctx.arc(p.x,p.y,3.2*(0.5+f*0.7),0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(p.x+ox,p.y+oy,3.2*(0.5+f*0.7),0,Math.PI*2);ctx.fill();
     }
     // power meter arc around ship
     const pow=game.previewPower||0;
