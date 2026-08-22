@@ -339,16 +339,40 @@ function genHole(courseRng,idx){
     for(const b of placed)if(Math.hypot(x-b.x,y-b.y)<visR+b.visR+30)return false;
     return true;
   }
-  let toPlace=nPlanets+(wantSun?1:0);
+  // Clearance from already-placed bodies plus the tee/flag anchors —
+  // the best-candidate score, so planets repel each other AND the endpoints.
+  function clearance(x,y,visR){
+    let m=Infinity;
+    for(const b of placed)m=Math.min(m,Math.hypot(x-b.x,y-b.y)-visR-b.visR);
+    m=Math.min(m,Math.hypot(x-hole.start.x,y-hole.start.y)-visR);
+    m=Math.min(m,Math.hypot(x-hole.goal.x,y-hole.goal.y)-visR);
+    return m;
+  }
+  const toPlace=nPlanets+(wantSun?1:0);
+  // Stratify the playfield into one horizontal band per body (shuffled order)
+  // so bodies spread along the tee->flag axis instead of bunching up.
+  const yTop=LH*0.18,yBot=LH*0.82,bandH=(yBot-yTop)/toPlace;
+  const bands=[...Array(toPlace).keys()];
+  for(let i=bands.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[bands[i],bands[j]]=[bands[j],bands[i]];}
   let sunPlaced=false;
-  for(let attempts=0;attempts<400&&hole.bodies.length<toPlace;attempts++){
+  for(let bi=0;bi<toPlace;bi++){
     const isSun=wantSun&&!sunPlaced;
     const rad=isSun?rrange(r,70,95):rrange(r,28,64);
     const hasRing=!isSun&&r()<0.28;
     const visR=isSun?rad*1.5:(hasRing?rad*1.75:rad*1.12); // spikes/glow/rings
-    const x=rrange(r,60,LW-60),y=rrange(r,LH*0.18,LH*0.82);
-    if(!fits(x,y,visR))continue;
-    const body={x,y,radius:rad,visR,kind:isSun?'sun':'planet',
+    // Mitchell's best-candidate: sample K spots in this body's band (with
+    // overlap into neighbors), keep the one farthest from everything placed.
+    const b0=yTop+bands[bi]*bandH;
+    let best=null,bestScore=-Infinity;
+    for(let k=0;k<14;k++){
+      const x=rrange(r,60,LW-60);
+      const y=rrange(r,Math.max(yTop,b0-bandH*0.35),Math.min(yBot,b0+bandH*1.35));
+      if(!fits(x,y,visR))continue;
+      const score=clearance(x,y,visR);
+      if(score>bestScore){bestScore=score;best={x,y};}
+    }
+    if(!best)continue; // band too crowded for this size — skip the body
+    const body={x:best.x,y:best.y,radius:rad,visR,kind:isSun?'sun':'planet',
       mass:rad*rad*(isSun?1.9:1),
       well:rad*(isSun?3.6:rrange(r,2.6,3.4)),
       pal:planetPalette(r,isSun?undefined:hueDeck[hueIdx++%hueDeck.length]),
