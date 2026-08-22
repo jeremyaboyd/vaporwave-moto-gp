@@ -417,14 +417,14 @@ const HOLE_LIB={
 easy:[
  {name:'First Contact',par:2,start:[450,1150],goal:[400,380],
   bodies:[[610,760,42]]},
- {name:'The Fairway',par:2,start:[450,1150],goal:[450,380],
-  bodies:[[240,900,40],[660,600,40]]},
+ {name:'The Weave',par:2,start:[450,1150],goal:[450,380],
+  bodies:[[360,900,38],[545,610,38]]},
  {name:'Slingshot 101',par:2,start:[280,1150],goal:[620,380],
   bodies:[[360,740,48,'planet',3.2]]},
  {name:'Twin Gates',par:2,start:[450,1150],goal:[450,380],
-  bodies:[[280,760,38],[620,760,38]]},
+  bodies:[[350,850,40],[550,640,40]]},
  {name:'Moonwalk',par:3,start:[450,1150],goal:[380,380],
-  bodies:[[600,780,44]],moons:[[0,104,0.55,10]]},
+  bodies:[[520,760,44]],moons:[[0,104,0.55,10]]},
 ],
 medium:[
  {name:'The Windmill',par:3,start:[450,1280],goal:[450,150],
@@ -449,7 +449,7 @@ hard:[
   bodies:[[450,640,30,'bh'],[140,320,62,'sun'],[750,1000,42]],
   moons:[[2,100,0.9,10]]},
  {name:'The Gauntlet',par:5,start:[450,1280],goal:[450,330],
-  bodies:[[240,820,44],[660,820,44]],
+  bodies:[[240,820,44],[660,820,44],[450,700,36]],
   moons:[[0,105,0.8,10]],
   belts:[[450,330,150,0.12,14,0.8,3.9]]},
  {name:'Wormhole Run',par:5,start:[450,1280],goal:[760,140],
@@ -528,7 +528,11 @@ function genCourse(seed){
     while(out.length<n)out.push(a.splice(Math.floor(r()*a.length),1)[0]);
     return out;
   };
-  const sel=[...pick(HOLE_LIB.easy,3),...pick(HOLE_LIB.medium,4),...pick(HOLE_LIB.hard,2)];
+  // Sector 1 is always the tutorial hole (the only straight-shot layout);
+  // the rest of the easy tier is drawn from the remaining designs.
+  const tutorial=HOLE_LIB.easy[0];
+  const sel=[tutorial,...pick(HOLE_LIB.easy.slice(1),2),
+             ...pick(HOLE_LIB.medium,4),...pick(HOLE_LIB.hard,2)];
   return sel.map((t,i)=>buildHole(t,r,i));
 }
 
