@@ -165,7 +165,7 @@ const G=1800;              // gravity tuning constant (mass = radius^2)
 const MAX_ACCEL=2600;      // clamp near planet centers
 const SHIP_R=7;            // ship collision radius
 const DT=1/120;            // physics step
-const MIN_LAUNCH=150, MAX_LAUNCH=580;   // launch speed range (px/s)
+const MIN_LAUNCH=150, MAX_LAUNCH=640;   // launch speed range (px/s)
 const MAX_DRAG=170;        // drag length for full power
 const SPACE_DRAG=0.55;     // exponential velocity decay per second ("space friction")
 const STOP_SPEED=20;       // below this (and outside strong gravity) the ship comes to rest
@@ -415,16 +415,16 @@ const shipSprite=makeShipSprite();
 // worm: [[ax,ay],[bx,by]]
 const HOLE_LIB={
 easy:[
- {name:'First Contact',par:2,start:[450,1280],goal:[450,150],
-  bodies:[[450,700,45]]},
- {name:'The Fairway',par:2,start:[450,1280],goal:[450,150],
-  bodies:[[240,880,40],[660,520,40]]},
- {name:'Slingshot 101',par:2,start:[220,1280],goal:[680,160],
-  bodies:[[450,640,58,'planet',3.2]]},
- {name:'Twin Gates',par:2,start:[450,1280],goal:[450,150],
-  bodies:[[280,700,38],[620,700,38]]},
- {name:'Moonwalk',par:3,start:[450,1280],goal:[450,150],
-  bodies:[[450,730,48]],moons:[[0,108,0.55,10]]},
+ {name:'First Contact',par:2,start:[450,1150],goal:[400,380],
+  bodies:[[610,760,42]]},
+ {name:'The Fairway',par:2,start:[450,1150],goal:[450,380],
+  bodies:[[240,900,40],[660,600,40]]},
+ {name:'Slingshot 101',par:2,start:[280,1150],goal:[620,380],
+  bodies:[[360,740,48,'planet',3.2]]},
+ {name:'Twin Gates',par:2,start:[450,1150],goal:[450,380],
+  bodies:[[280,760,38],[620,760,38]]},
+ {name:'Moonwalk',par:3,start:[450,1150],goal:[380,380],
+  bodies:[[600,780,44]],moons:[[0,104,0.55,10]]},
 ],
 medium:[
  {name:'The Windmill',par:3,start:[450,1280],goal:[450,150],
