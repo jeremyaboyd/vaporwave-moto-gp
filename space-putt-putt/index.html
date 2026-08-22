@@ -1019,16 +1019,15 @@ document.getElementById('btnPlay').onclick=()=>{
   btn.dataset.counting='1';
   const s=seedInput.value.trim()||randomSeedWord();
   seedInput.value=s;
-  let n=3;
-  btn.textContent='T-'+n+'…';
-  const tick=setInterval(()=>{
-    n--;
-    if(n>0){btn.textContent='T-'+n+'…';return;}
-    clearInterval(tick);
+  btn.textContent='T-3…';
+  setTimeout(()=>{btn.textContent='T-2…';},450);
+  setTimeout(()=>{btn.textContent='T-1…';},900);
+  // hold on T-1 a beat longer for the drama
+  setTimeout(()=>{
     btn.textContent='LIFT OFF!';
     delete btn.dataset.counting;
     startCourse(s);
-  },300);
+  },2350);
 };
 document.getElementById('btnShopDone').onclick=()=>{
   document.getElementById('shopScreen').classList.add('hidden');
