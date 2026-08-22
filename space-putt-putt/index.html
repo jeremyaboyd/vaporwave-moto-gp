@@ -165,7 +165,7 @@ const G=1800;              // gravity tuning constant (mass = radius^2)
 const MAX_ACCEL=2600;      // clamp near planet centers
 const SHIP_R=7;            // ship collision radius
 const DT=1/120;            // physics step
-const MIN_LAUNCH=150, MAX_LAUNCH=640;   // launch speed range (px/s)
+const MIN_LAUNCH=150, MAX_LAUNCH=580;   // launch speed range (px/s)
 const MAX_DRAG=170;        // drag length for full power
 const SPACE_DRAG=0.55;     // exponential velocity decay per second ("space friction")
 const STOP_SPEED=20;       // below this (and outside strong gravity) the ship comes to rest
@@ -471,7 +471,7 @@ function buildHole(tpl,r,idx){
   const hole={idx,LW,LH,bodies:[],stars:[],par:tpl.par,name:tpl.name,
     moons:[],belts:[],wormholes:null};
   hole.start={x:FX(tpl.start[0])+j(),y:tpl.start[1]+j()};
-  hole.goal={x:FX(tpl.goal[0])+j(),y:tpl.goal[1]+j(),radius:26};
+  hole.goal={x:FX(tpl.goal[0])+j(),y:tpl.goal[1]+j(),radius:20};
 
   const hueDeck=[14,32,48,140,175,205,262,290,350];
   for(let i=hueDeck.length-1;i>0;i--){const k=Math.floor(r()*(i+1));[hueDeck[i],hueDeck[k]]=[hueDeck[k],hueDeck[i]];}
@@ -562,7 +562,7 @@ function stepShip(hole,s,dt,noGrav){
     if(Math.hypot(s.x-b.x,s.y-b.y)<b.radius+SHIP_R)return 'crash';
   }
   const g=hole.goal;
-  if(Math.hypot(s.x-g.x,s.y-g.y)<g.radius+SHIP_R+4)return 'goal';
+  if(Math.hypot(s.x-g.x,s.y-g.y)<g.radius+SHIP_R+2)return 'goal';
   const M=160;
   if(s.x<-M||s.x>hole.LW+M||s.y<-M||s.y>hole.LH+M)return 'lost';
   if(s.vx*s.vx+s.vy*s.vy<STOP_SPEED*STOP_SPEED&&
@@ -914,7 +914,9 @@ function computePreview(){
   const h=game.hole;
   const noGrav=game.armShield&&game.items.shield>0;
   const s={x:game.ship.x,y:game.ship.y,vx:Math.cos(l.angle)*l.speed,vy:Math.sin(l.angle)*l.speed};
-  const steps=Math.round(170*buzzMult());
+  // Short leash sober: you see the launch and the first bend, then you're
+  // playing golf, not tracing an answer key. Ales lengthen the look.
+  const steps=Math.round(60*buzzMult());
   const pdt=DT*1.6,wstate={cool:0};
   for(let i=0;i<steps;i++){
     const res=stepShip(h,s,pdt,noGrav);
