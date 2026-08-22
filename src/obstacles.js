@@ -185,7 +185,7 @@ export class Obstacles {
     // median wall: hitting it head-on at bike height is a crash
     for (const md of this.medians) {
       if (player.z <= md.z0 && player.z >= md.z0 - md.len &&
-          Math.abs(player.x) < 1.35 && player.y < 1.1) {
+          Math.abs(player.x) < 0.7 && player.y < 1.1) {
         onCollide({ median: true });
         break;
       }
