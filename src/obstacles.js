@@ -127,7 +127,8 @@ export class Obstacles {
     if (road.state.tutorial) return; // riding school: hazards off, ramps manual
     const d = road.dist(seg.z0);
     if (d < 400) return;
-    const diff = Math.min(1, d / 12000);
+    // sqrt front-loads the ramp: half difficulty by 2km, full by 8km
+    const diff = Math.min(1, Math.sqrt(d / 8000));
     const { laneXs, segmentLength } = this.world;
 
     // median dividers: sometimes the center strip walls off for a stretch
