@@ -240,6 +240,13 @@
     box-shadow: 0 0 14px rgba(47,233,255,.25), inset 0 0 14px rgba(47,233,255,.12);
   }
   .tbtn:active, .tbtn.held { background: rgba(255,47,214,.18); border-color: rgba(255,47,214,.8); color: var(--pink); }
+  /* neon chevron glyphs — stroked like the wireframe world, glow follows the
+     button's current color so the pink held state carries through */
+  .tbtn svg {
+    width: 46%; height: auto; fill: none; stroke: currentColor;
+    stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 0 5px currentColor);
+  }
   #t-left  { left: 18px;  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px); }
   #t-right { left: calc(18px + clamp(58px,11vw,84px) + 14px); bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px); }
   #t-gas   { right: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 40px + clamp(58px,11vw,84px) + 12px); }
@@ -368,8 +375,8 @@
 </div>
 
 <div id="touch-controls">
-  <div class="tbtn" id="t-left">&#9664;</div>
-  <div class="tbtn" id="t-right">&#9654;</div>
+  <div class="tbtn" id="t-left"><svg viewBox="0 0 32 24" aria-label="lean left"><path d="M15 3 L5 12 L15 21 M27 3 L17 12 L27 21"/></svg></div>
+  <div class="tbtn" id="t-right"><svg viewBox="0 0 32 24" aria-label="lean right"><path d="M17 3 L27 12 L17 21 M5 3 L15 12 L5 21"/></svg></div>
   <div class="tbtn" id="t-boost">BST</div>
   <div class="tbtn" id="t-gas">GAS</div>
   <div class="tbtn" id="t-brake">BRK</div>
