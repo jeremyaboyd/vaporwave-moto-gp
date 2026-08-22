@@ -108,6 +108,7 @@
       <div>🎯 Drag anywhere to aim (slingshot style), release to launch.</div>
       <div>🛑 Burns slow down and stop — chain them across the sector.</div>
       <div>💥 Crash or drift away = the burn counts, retry from your last spot.</div>
+      <div>🌑 Watch for moons, asteroid belts, wormholes &amp; black holes.</div>
       <div>✦ Finish under parsec to earn StarBux for the Pro Shop.</div>
     </div>
     <p style="margin-bottom:4px">Course seed:</p>
@@ -211,12 +212,33 @@ function drawFace(c,R,r,mood){
   for(const dx of[-eyeX-s*0.5,eyeX+s*0.5]){c.beginPath();c.arc(dx,R*0.12,s*0.7,0,Math.PI*2);c.fill();}
 }
 function makePlanetSprite(r,body){
-  const R=body.radius, pad=body.kind==='sun'?R*1.1:(body.hasRing?R*0.9:R*0.35);
+  const R=body.radius, pad=body.kind==='sun'?R*1.1:body.kind==='blackhole'?R*1.2:(body.hasRing?R*0.9:R*0.35);
   const S=Math.ceil((R+pad)*2), cx=S/2;
   const cv=document.createElement('canvas');cv.width=cv.height=S*2;
   const c=cv.getContext('2d');c.scale(2,2);c.translate(cx,cx);
   const pal=body.pal;
 
+  if(body.kind==='blackhole'){
+    // accretion glow
+    const g=c.createRadialGradient(0,0,R*0.7,0,0,R+pad);
+    g.addColorStop(0,'rgba(160,90,255,.5)');g.addColorStop(1,'rgba(160,90,255,0)');
+    c.fillStyle=g;c.beginPath();c.arc(0,0,R+pad,0,Math.PI*2);c.fill();
+    // accretion disc
+    c.strokeStyle='#c77dff';c.lineWidth=R*0.30;
+    c.beginPath();c.ellipse(0,0,R*1.85,R*0.55,-0.35,0,Math.PI*2);c.stroke();
+    c.strokeStyle='#ffb347';c.lineWidth=R*0.12;c.globalAlpha=.85;
+    c.beginPath();c.ellipse(0,0,R*1.55,R*0.42,-0.35,0,Math.PI*2);c.stroke();
+    c.globalAlpha=1;
+    // the void itself
+    c.fillStyle='#0a0714';c.beginPath();c.arc(0,0,R,0,Math.PI*2);c.fill();
+    c.lineWidth=Math.max(2.5,R*0.09);c.strokeStyle='#8a5cf0';
+    c.beginPath();c.arc(0,0,R,0,Math.PI*2);c.stroke();
+    // hungry little eyes
+    c.fillStyle='rgba(255,255,255,.9)';
+    for(const dx of[-R*0.32,R*0.32]){c.beginPath();c.arc(dx,-R*0.08,R*0.09,0,Math.PI*2);c.fill();}
+    body.sprite=cv;body.spriteHalf=S;
+    return;
+  }
   if(body.kind==='sun'){
     // glow
     const g=c.createRadialGradient(0,0,R*0.5,0,0,R+pad);
@@ -321,6 +343,41 @@ function makeGoalSprite(r,goal){
   goal.sprite=cv;goal.spriteHalf=S;goal.spriteOffY=-R*0.3;
 }
 
+function makeMoonSprite(r,m){
+  const R=m.radius,S=Math.ceil(R*1.4);
+  const cv=document.createElement('canvas');cv.width=cv.height=S*4;
+  const c=cv.getContext('2d');c.scale(2,2);c.translate(S,S);
+  c.beginPath();c.arc(0,0,R,0,Math.PI*2);
+  c.fillStyle='#c9cdd6';c.fill();
+  c.save();c.clip();
+  c.fillStyle='rgba(90,95,110,.5)';
+  for(let i=0;i<4;i++){c.beginPath();c.arc(rrange(r,-R*.6,R*.6),rrange(r,-R*.6,R*.6),R*rrange(r,.18,.32),0,Math.PI*2);c.fill();}
+  const sg=c.createRadialGradient(-R*.4,-R*.4,R*.1,0,0,R*1.2);
+  sg.addColorStop(0,'rgba(255,255,255,.3)');sg.addColorStop(1,'rgba(10,10,30,.25)');
+  c.fillStyle=sg;c.fillRect(-R,-R,R*2,R*2);
+  c.restore();
+  c.lineWidth=2;c.strokeStyle='rgba(35,30,45,.7)';
+  c.beginPath();c.arc(0,0,R,0,Math.PI*2);c.stroke();
+  m.sprite=cv;m.spriteHalf=S;
+}
+
+function makeRockSprite(r,rock){
+  const R=rock.radius,S=Math.ceil(R*1.5);
+  const cv=document.createElement('canvas');cv.width=cv.height=S*4;
+  const c=cv.getContext('2d');c.scale(2,2);c.translate(S,S);
+  c.beginPath();
+  const n=8;
+  for(let k=0;k<=n;k++){const t=k/n*Math.PI*2,rr=R*(0.8+(k===n?0.2*Math.sin(1):0.2*Math.sin(t*3+1)));
+    const px=Math.cos(t)*rr,py=Math.sin(t)*rr;
+    k?c.lineTo(px,py):c.moveTo(px,py);}
+  c.closePath();
+  c.fillStyle='#8f96a3';c.fill();
+  c.lineWidth=2;c.strokeStyle='rgba(35,30,45,.75)';c.stroke();
+  c.fillStyle='rgba(60,65,80,.5)';
+  for(let i=0;i<2;i++){c.beginPath();c.arc(rrange(r,-R*.4,R*.4),rrange(r,-R*.4,R*.4),R*rrange(r,.18,.3),0,Math.PI*2);c.fill();}
+  rock.sprite=cv;rock.spriteHalf=S;
+}
+
 /* ============================== SHIP SPRITE ============================== */
 function makeShipSprite(){
   const S=26,cv=document.createElement('canvas');cv.width=cv.height=S*4;
@@ -357,6 +414,7 @@ function genHole(courseRng,idx){
 
   const nPlanets=Math.min(7,1+Math.round(diff*4)+ (r()<0.4?1:0));
   const wantSun=idx>=2&&r()<(0.25+diff*0.55);
+  const wantBH=!wantSun&&idx>=5&&r()<0.4; // late-course black hole instead of a sun
 
   // start bottom area, goal top area, jittered
   hole.start={x:rrange(r,LW*0.25,LW*0.75),y:rrange(r,LH*0.86,LH*0.93)};
@@ -384,18 +442,19 @@ function genHole(courseRng,idx){
     m=Math.min(m,Math.hypot(x-hole.goal.x,y-hole.goal.y)-visR);
     return m;
   }
-  const toPlace=nPlanets+(wantSun?1:0);
+  const toPlace=nPlanets+(wantSun||wantBH?1:0);
   // Stratify the playfield into one horizontal band per body (shuffled order)
   // so bodies spread along the tee->flag axis instead of bunching up.
   const yTop=LH*0.18,yBot=LH*0.82,bandH=(yBot-yTop)/toPlace;
   const bands=[...Array(toPlace).keys()];
   for(let i=bands.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[bands[i],bands[j]]=[bands[j],bands[i]];}
-  let sunPlaced=false;
+  let heavyPlaced=false;
   for(let bi=0;bi<toPlace;bi++){
-    const isSun=wantSun&&!sunPlaced;
-    const rad=isSun?rrange(r,70,95):rrange(r,28,64);
-    const hasRing=!isSun&&r()<0.28;
-    const visR=isSun?rad*1.5:(hasRing?rad*1.75:rad*1.12); // spikes/glow/rings
+    const isSun=wantSun&&!heavyPlaced;
+    const isBH=wantBH&&!heavyPlaced;
+    const rad=isSun?rrange(r,70,95):isBH?rrange(r,26,36):rrange(r,28,64);
+    const hasRing=!isSun&&!isBH&&r()<0.28;
+    const visR=isSun?rad*1.5:isBH?rad*2.2:(hasRing?rad*1.75:rad*1.12); // spikes/glow/rings/disc
     // Mitchell's best-candidate: sample K spots in this body's band (with
     // overlap into neighbors), keep the one farthest from everything placed.
     const b0=yTop+bands[bi]*bandH;
@@ -408,16 +467,71 @@ function genHole(courseRng,idx){
       if(score>bestScore){bestScore=score;best={x,y};}
     }
     if(!best)continue; // band too crowded for this size — skip the body
-    const body={x:best.x,y:best.y,radius:rad,visR,kind:isSun?'sun':'planet',
-      mass:rad*rad*(isSun?1.9:1),
-      well:rad*(isSun?3.6:rrange(r,2.6,3.4)),
-      pal:planetPalette(r,isSun?undefined:hueDeck[hueIdx++%hueDeck.length]),
+    const body={x:best.x,y:best.y,radius:rad,visR,
+      kind:isSun?'sun':isBH?'blackhole':'planet',
+      mass:rad*rad*(isSun?1.9:isBH?5.5:1),
+      well:rad*(isSun?3.6:isBH?5:rrange(r,2.6,3.4)),
+      pal:planetPalette(r,isSun||isBH?undefined:hueDeck[hueIdx++%hueDeck.length]),
       hasRing,ringTilt:rrange(r,-0.45,0.1),
       style:rpick(r,['bands','blobs','craters']),
       earthy:r()<0.3,face:r()<0.85,
-      wellHue:rint(r,0,360)};
-    if(isSun)sunPlaced=true;
+      wellHue:isBH?275:rint(r,0,360)};
+    if(isSun||isBH)heavyPlaced=true;
     placed.push(body);hole.bodies.push(body);
+  }
+
+  // ---- putt-putt hazards, space edition ----
+  // Orbiting moons: the windmills. Pure blockers riding inside a planet's well.
+  hole.moons=[];
+  if(idx>=1)for(const b of hole.bodies){
+    if(b.kind!=='planet')continue;
+    if(r()>=0.2+diff*0.5)continue;
+    const n=r()<0.25?2:1;
+    let lastDist=0;
+    for(let i=0;i<n;i++){
+      const mr=rrange(r,8,13);
+      const dmin=Math.max(b.radius*1.45+mr,lastDist+mr*2.5);
+      const dmax=b.well-mr-6;
+      if(dmax<=dmin)continue;
+      const m={parent:b,dist:rrange(r,dmin,dmax),
+        speed:rrange(r,0.5,1.1)*(r()<0.5?-1:1),phase:r()*Math.PI*2,radius:mr};
+      lastDist=m.dist;
+      makeMoonSprite(r,m);hole.moons.push(m);
+    }
+  }
+  // Asteroid belt: a slowly rotating ring of rocks with two gaps to thread.
+  hole.belts=[];
+  if(idx>=3&&r()<0.3+diff*0.4){
+    for(let attempt=0;attempt<60;attempt++){
+      const R=rrange(r,110,190);
+      const cx=rrange(r,R*0.4,LW-R*0.4),cy=rrange(r,LH*0.25,LH*0.75);
+      const ds=Math.hypot(cx-hole.start.x,cy-hole.start.y),dg=Math.hypot(cx-hole.goal.x,cy-hole.goal.y);
+      let ok=Math.abs(ds-R)>80&&Math.abs(dg-R)>80&&ds>100&&dg>100;
+      if(ok)for(const b of hole.bodies){if(Math.abs(Math.hypot(cx-b.x,cy-b.y)-R)<b.visR+26){ok=false;break;}}
+      if(!ok)continue;
+      const belt={cx,cy,R,speed:rrange(r,0.06,0.16)*(r()<0.5?-1:1),rocks:[]};
+      const nRocks=rint(r,10,15);
+      const gapA=r()*Math.PI*2,gapB=gapA+Math.PI*rrange(r,0.7,1.3);
+      const angDist=(a,g)=>Math.abs(((a-g)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);
+      for(let k=0;k<nRocks;k++){
+        const ang=k/nRocks*Math.PI*2+rrange(r,-0.08,0.08);
+        if(angDist(ang,gapA)<0.55||angDist(ang,gapB)<0.45)continue; // corridors
+        const rock={ang,radius:rrange(r,8,13),spin:rrange(r,-1.5,1.5)};
+        makeRockSprite(r,rock);belt.rocks.push(rock);
+      }
+      hole.belts.push(belt);break;
+    }
+  }
+  // Wormhole pair: the pipe. Fly in one end, pop out the other, velocity intact.
+  hole.wormholes=null;
+  if(idx>=2&&r()<0.3){
+    const spot=()=>{for(let a=0;a<50;a++){
+      const x=rrange(r,70,LW-70),y=rrange(r,LH*0.2,LH*0.8);
+      let ok=Math.hypot(x-hole.start.x,y-hole.start.y)>130&&Math.hypot(x-hole.goal.x,y-hole.goal.y)>130;
+      if(ok)for(const b of hole.bodies)if(Math.hypot(x-b.x,y-b.y)<b.visR+40){ok=false;break;}
+      if(ok)return{x,y};}return null;};
+    const A=spot(),B=spot();
+    if(A&&B&&Math.hypot(A.x-B.x,A.y-B.y)>260)hole.wormholes={a:A,b:B,r:16};
   }
   // stars
   const nStars=90;
@@ -426,10 +540,12 @@ function genHole(courseRng,idx){
   makeGoalSprite(r,hole.goal);
   for(const b of hole.bodies)makePlanetSprite(r,b);
 
-  // Par = solver's greedy shot count + a stroke of human margin (more late-course)
+  // Par = solver's greedy shot count + a stroke of human margin (more late-course),
+  // plus one when the hole is hazard-heavy (moons to time, belts to thread)
   const sol=solveHole(hole);
   if(!sol.solvable)return null;
-  hole.par=Math.max(2,Math.min(5,sol.shots+1+(diff>0.55?1:0)));
+  const hazardBump=(hole.moons.length>=2||hole.belts.length>0)?1:0;
+  hole.par=Math.max(2,Math.min(6,sol.shots+1+(diff>0.55?1:0)+hazardBump));
   return hole;
 }
 
@@ -442,6 +558,7 @@ function genCourse(seed){
     if(!h){ // extremely unlikely fallback: empty-ish hole
       const r=makeRng('fallback'+i);
       h={idx:i,LW:900,LH:1400,bodies:[],stars:[],par:2,
+        moons:[],belts:[],wormholes:null,
         start:{x:450,y:1290},goal:{x:450,y:150,radius:26}};
       for(let s=0;s<90;s++)h.stars.push({x:r()*900,y:r()*1400,s:rrange(r,0.8,2.4),tw:r()<0.12,ph:r()*6.28});
       makeGoalSprite(r,h.goal);
@@ -487,11 +604,43 @@ function stepShip(hole,s,dt,noGrav){
      Math.hypot(_acc.x,_acc.y)<STOP_ACCEL)return 'rest';
   return 'fly';
 }
+/* ---- moving hazards (moons, belt rocks, wormholes) ---- */
+function moonPos(m,t){const a=m.phase+m.speed*t;
+  return{x:m.parent.x+Math.cos(a)*m.dist,y:m.parent.y+Math.sin(a)*m.dist};}
+function rockPos(belt,rock,t){const a=rock.ang+belt.speed*t;
+  return{x:belt.cx+Math.cos(a)*belt.R,y:belt.cy+Math.sin(a)*belt.R};}
+function movingHazardHit(hole,x,y,t,skipMoons){
+  if(!skipMoons)for(const m of hole.moons||[]){
+    const p=moonPos(m,t);
+    if(Math.hypot(x-p.x,y-p.y)<m.radius+SHIP_R)return true;
+  }
+  for(const belt of hole.belts||[])for(const rock of belt.rocks){
+    const p=rockPos(belt,rock,t);
+    if(Math.hypot(x-p.x,y-p.y)<rock.radius+SHIP_R)return true;
+  }
+  return false;
+}
+// teleport if inside a wormhole mouth; wstate.cool prevents instant re-entry
+function tryWormhole(hole,s,wstate){
+  const w=hole.wormholes;
+  if(!w||wstate.cool>0)return false;
+  for(const[from,to]of[[w.a,w.b],[w.b,w.a]]){
+    if(Math.hypot(s.x-from.x,s.y-from.y)<w.r+SHIP_R){
+      s.x=to.x;s.y=to.y;wstate.cool=0.6;return true;
+    }
+  }
+  return false;
+}
+
 function simulate(hole,x,y,angle,speed,maxSteps){
+  // Solver view: belts frozen at t=0, moons ignored — both are timeable by a
+  // human (they keep moving while you aim), so the base route must exist
+  // without them but belt gaps must be threadable.
   const s={x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed};
   for(let i=0;i<maxSteps;i++){
     const res=stepShip(hole,s,DT);
     if(res!=='fly')return{res,x:s.x,y:s.y};
+    if(movingHazardHit(hole,s.x,s.y,0,true))return{res:'crash',x:s.x,y:s.y};
   }
   return{res:'lost',x:s.x,y:s.y};
 }
@@ -533,7 +682,8 @@ const game={
   trail:[],particles:[],
   drag:null,preview:[],
   view:{scale:1,ox:0,oy:0},
-  flightTime:0,bannerT:0,time:0
+  flightTime:0,bannerT:0,time:0,
+  holeClock:0,wormState:{cool:0}
 };
 
 /* ============================== PRO SHOP ============================== */
@@ -591,6 +741,7 @@ function startHole(i){
   game.drinks=game.drinks.filter(d=>d.left>0);
   if(hadBuzz>0&&buzzLevel()===0)toast('☕ Sober again. The line looks… honest.',1600);
   game.holeIdx=i;game.hole=game.holes[i];game.strokes=0;
+  game.holeClock=0;game.wormState={cool:0};
   fitHole(game.hole);
   game.shotOrigin={x:game.hole.start.x,y:game.hole.start.y};
   resetShip();
@@ -799,10 +950,15 @@ function computePreview(){
   const noGrav=game.armShield&&game.items.shield>0;
   const s={x:game.ship.x,y:game.ship.y,vx:Math.cos(l.angle)*l.speed,vy:Math.sin(l.angle)*l.speed};
   const steps=Math.round(170*buzzMult());
+  const pdt=DT*1.6,wstate={cool:0};
   for(let i=0;i<steps;i++){
-    const res=stepShip(h,s,DT*1.6,noGrav);
+    const res=stepShip(h,s,pdt,noGrav);
+    wstate.cool=Math.max(0,wstate.cool-pdt);
     if(i%4===0)game.preview.push({x:s.x,y:s.y});
     if(res!=='fly')break;
+    // where the moons/rocks WILL be when the shot gets there
+    if(movingHazardHit(h,s.x,s.y,game.holeClock+i*pdt))break;
+    tryWormhole(h,s,wstate);
   }
   game.previewPower=l.power;
 }
@@ -829,13 +985,24 @@ function update(dt){
     if(p.t>p.life){game.particles.splice(i,1);continue;}
     p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=0.985;p.vy*=0.985;
   }
+  // hazards keep moving while you aim — timing IS the game
+  if(game.state==='aim'||game.state==='drag'||game.state==='crashing')game.holeClock+=dt;
+  if(game.state==='drag')computePreview(); // keep the line honest as moons move
   if(game.state==='flying'){
     game.flightTime+=dt;
     const sub=Math.max(1,Math.round(dt/DT));
     let res='fly';
     for(let i=0;i<sub;i++){
+      game.holeClock+=DT;
+      game.wormState.cool=Math.max(0,game.wormState.cool-DT);
       res=stepShip(game.hole,game.ship,DT,game.shotNoGrav);
       if(res==='crash'&&game.items.bumper>0){res=gravBump();}
+      if(res==='fly'&&movingHazardHit(game.hole,game.ship.x,game.ship.y,game.holeClock))res='crash';
+      if(res==='fly'&&tryWormhole(game.hole,game.ship,game.wormState)){
+        spawnConfetti(game.ship.x,game.ship.y);
+        toast('🌀 Wormhole! Where did THAT come out…',1300);
+        game.trail.length=0;
+      }
       if(res!=='fly')break;
     }
     const sp=Math.hypot(game.ship.vx,game.ship.vy);
@@ -929,6 +1096,47 @@ function render(){
     ctx.globalAlpha=1;ctx.setLineDash([]);
   }
 
+  // moon orbit paths
+  for(const m of h.moons||[]){
+    ctx.strokeStyle='rgba(200,205,220,.22)';ctx.lineWidth=1.6;
+    ctx.setLineDash([3,6]);
+    ctx.beginPath();ctx.arc(m.parent.x,m.parent.y,m.dist,0,Math.PI*2);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // asteroid belts
+  for(const belt of h.belts||[]){
+    ctx.strokeStyle='rgba(160,168,185,.14)';ctx.lineWidth=belt.rocks.length?22:0;
+    ctx.beginPath();ctx.arc(belt.cx,belt.cy,belt.R,0,Math.PI*2);ctx.stroke();
+    for(const rock of belt.rocks){
+      const p=rockPos(belt,rock,game.holeClock);
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(rock.spin*game.holeClock);
+      ctx.drawImage(rock.sprite,-rock.spriteHalf,-rock.spriteHalf,rock.spriteHalf*2,rock.spriteHalf*2);
+      ctx.restore();
+    }
+  }
+
+  // wormholes
+  if(h.wormholes){
+    const w=h.wormholes;
+    const mouths=[[w.a,'#b57bff'],[w.b,'#5fe0a0']];
+    for(const[m,col]of mouths){
+      ctx.save();ctx.translate(m.x,m.y);
+      ctx.rotate(game.holeClock*1.8);
+      ctx.strokeStyle=col;ctx.lineCap='round';
+      for(let k=0;k<3;k++){
+        ctx.lineWidth=3.5-k;
+        ctx.globalAlpha=0.9-k*0.25;
+        ctx.beginPath();ctx.arc(0,0,w.r-3-k*4,k*2.1,k*2.1+Math.PI*1.4);ctx.stroke();
+      }
+      ctx.globalAlpha=1;
+      ctx.lineWidth=2.5;
+      const pulse=w.r+4+Math.sin(game.holeClock*3)*2;
+      ctx.globalAlpha=.5;ctx.beginPath();ctx.arc(0,0,pulse,0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha=1;ctx.restore();
+    }
+  }
+
   // goal ring pulse
   const g=h.goal;
   ctx.strokeStyle='rgba(90,220,110,.6)';ctx.lineWidth=3;
@@ -941,8 +1149,20 @@ function render(){
 
   // bodies
   for(const b of h.bodies){
+    if(b.kind==='blackhole'){
+      ctx.save();ctx.translate(b.x,b.y);ctx.rotate(game.time*0.5);
+      ctx.drawImage(b.sprite,-b.spriteHalf,-b.spriteHalf,b.spriteHalf*2,b.spriteHalf*2);
+      ctx.restore();
+      continue;
+    }
     const bob=Math.sin(game.time*0.9+b.x*0.01)*2;
     ctx.drawImage(b.sprite,b.x-b.spriteHalf,b.y-b.spriteHalf+bob,b.spriteHalf*2,b.spriteHalf*2);
+  }
+
+  // moons ride on top of everything planetary
+  for(const m of h.moons||[]){
+    const p=moonPos(m,game.holeClock);
+    ctx.drawImage(m.sprite,p.x-m.spriteHalf,p.y-m.spriteHalf,m.spriteHalf*2,m.spriteHalf*2);
   }
 
   // tee marker
