@@ -84,7 +84,8 @@
     <div class="howto">
       <div>🪐 Every planet &amp; sun has a gravity well that bends your shot.</div>
       <div>🎯 Drag anywhere to aim (slingshot style), release to launch.</div>
-      <div>💥 Crash or drift away = the stroke still counts. Reach the flag!</div>
+      <div>🛑 Shots slow down and stop — chain putts across the system.</div>
+      <div>💥 Crash or drift away = stroke counts, retry from your last spot.</div>
       <div>⭐ Fewest strokes wins. Par is on the card.</div>
     </div>
     <p style="margin-bottom:4px">Course seed:</p>
@@ -133,7 +134,10 @@ const SHIP_R=7;            // ship collision radius
 const DT=1/120;            // physics step
 const MIN_LAUNCH=150, MAX_LAUNCH=640;   // launch speed range (px/s)
 const MAX_DRAG=170;        // drag length for full power
-const FLIGHT_TIMEOUT=14;   // seconds before a shot is called back
+const SPACE_DRAG=0.55;     // exponential velocity decay per second ("space friction")
+const STOP_SPEED=20;       // below this (and outside strong gravity) the ship comes to rest
+const STOP_ACCEL=90;       // gravity stronger than this keeps a slow ship moving
+const FLIGHT_TIMEOUT=10;   // seconds before a shot is called back
 const HOLES=9;
 
 const canvas=document.getElementById('game');
@@ -390,10 +394,10 @@ function genHole(courseRng,idx){
   makeGoalSprite(r,hole.goal);
   for(const b of hole.bodies)makePlanetSprite(r,b);
 
-  // Par from a solver: coarse-search launches, par = f(difficulty of found solutions)
+  // Par = solver's greedy shot count + a stroke of human margin (more late-course)
   const sol=solveHole(hole);
   if(!sol.solvable)return null;
-  hole.par=Math.max(2,Math.min(5,2+Math.round(diff*2)+(sol.hard?1:0)));
+  hole.par=Math.max(2,Math.min(5,sol.shots+1+(diff>0.55?1:0)));
   return hole;
 }
 
@@ -429,10 +433,13 @@ function accelAt(hole,x,y,out){
   out.x=ax;out.y=ay;return out;
 }
 const _acc={x:0,y:0};
-// step one physics tick; returns 'fly' | 'crash' | 'goal' | 'lost'
+// step one physics tick; returns 'fly' | 'crash' | 'goal' | 'lost' | 'rest'
 function stepShip(hole,s,dt){
   accelAt(hole,s.x,s.y,_acc);
   s.vx+=_acc.x*dt;s.vy+=_acc.y*dt;
+  // "space friction" — not physical, but this is golf: shots decay and stop
+  const damp=Math.exp(-SPACE_DRAG*dt);
+  s.vx*=damp;s.vy*=damp;
   s.x+=s.vx*dt;s.y+=s.vy*dt;
   for(const b of hole.bodies){
     if(Math.hypot(s.x-b.x,s.y-b.y)<b.radius+SHIP_R)return 'crash';
@@ -441,29 +448,43 @@ function stepShip(hole,s,dt){
   if(Math.hypot(s.x-g.x,s.y-g.y)<g.radius+SHIP_R+4)return 'goal';
   const M=160;
   if(s.x<-M||s.x>hole.LW+M||s.y<-M||s.y>hole.LH+M)return 'lost';
+  if(s.vx*s.vx+s.vy*s.vy<STOP_SPEED*STOP_SPEED&&
+     Math.hypot(_acc.x,_acc.y)<STOP_ACCEL)return 'rest';
   return 'fly';
 }
-function simulate(hole,angle,speed,maxSteps){
-  const s={x:hole.start.x,y:hole.start.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed};
+function simulate(hole,x,y,angle,speed,maxSteps){
+  const s={x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed};
   for(let i=0;i<maxSteps;i++){
     const res=stepShip(hole,s,DT);
-    if(res!=='fly')return res;
+    if(res!=='fly')return{res,x:s.x,y:s.y};
   }
-  return 'lost';
+  return{res:'lost',x:s.x,y:s.y};
 }
+// Greedy multi-shot solver: from the tee, repeatedly take the launch whose
+// resting point lands closest to the flag. Guarantees winnability and yields
+// a shot count that drives par.
 function solveHole(hole){
-  // coarse launch search from the tee — guarantees the hole is winnable
-  let wins=0,tried=0;
   const steps=Math.ceil(FLIGHT_TIMEOUT/DT);
-  for(let ai=0;ai<28;ai++){
-    const angle=ai/28*Math.PI*2;
-    for(let pi=0;pi<6;pi++){
-      const speed=MIN_LAUNCH+(pi/5)*(MAX_LAUNCH-MIN_LAUNCH);
-      tried++;
-      if(simulate(hole,angle,speed,steps)==='goal')wins++;
+  let px=hole.start.x,py=hole.start.y;
+  for(let shot=1;shot<=7;shot++){
+    let best=null,bestD=Infinity;
+    for(let ai=0;ai<24;ai++){
+      const angle=ai/24*Math.PI*2;
+      for(let pi=0;pi<6;pi++){
+        const speed=MIN_LAUNCH+(pi/5)*(MAX_LAUNCH-MIN_LAUNCH);
+        const end=simulate(hole,px,py,angle,speed,steps);
+        if(end.res==='goal')return{solvable:true,shots:shot};
+        if(end.res!=='rest')continue;
+        const d=Math.hypot(end.x-hole.goal.x,end.y-hole.goal.y);
+        if(d<bestD){bestD=d;best=end;}
+      }
     }
+    // no resting spot, or no meaningful progress toward the flag -> unfair hole
+    const cur=Math.hypot(px-hole.goal.x,py-hole.goal.y);
+    if(!best||bestD>cur-40)return{solvable:false,shots:shot};
+    px=best.x;py=best.y;
   }
-  return {solvable:wins>0,hard:wins<=4};
+  return{solvable:false,shots:7};
 }
 
 /* ============================== GAME STATE ============================== */
@@ -498,14 +519,15 @@ function startCourse(seed){
 function startHole(i){
   game.holeIdx=i;game.hole=game.holes[i];game.strokes=0;
   fitHole(game.hole);
+  game.shotOrigin={x:game.hole.start.x,y:game.hole.start.y};
   resetShip();
   game.state='aim';
   updateHud();
   toast('Hole '+(i+1)+' — Par '+game.hole.par,1600);
 }
+// return the ship to where the last shot was taken from (tee for shot 1)
 function resetShip(){
-  const h=game.hole;
-  game.ship.x=h.start.x;game.ship.y=h.start.y;
+  game.ship.x=game.shotOrigin.x;game.ship.y=game.shotOrigin.y;
   game.ship.vx=0;game.ship.vy=0;game.ship.angle=-Math.PI/2;
   game.trail.length=0;game.flightTime=0;
 }
@@ -620,6 +642,7 @@ function onUp(){
   game.drag=null;game.preview.length=0;
   if(!l){game.state='aim';return;}
   game.strokes++;updateHud();
+  game.shotOrigin={x:game.ship.x,y:game.ship.y};
   game.ship.vx=Math.cos(l.angle)*l.speed;
   game.ship.vy=Math.sin(l.angle)*l.speed;
   game.state='flying';game.flightTime=0;game.trail.length=0;
@@ -637,7 +660,7 @@ function computePreview(){
   const l=launchFromDrag();
   if(!l)return;
   const h=game.hole;
-  const s={x:h.start.x,y:h.start.y,vx:Math.cos(l.angle)*l.speed,vy:Math.sin(l.angle)*l.speed};
+  const s={x:game.ship.x,y:game.ship.y,vx:Math.cos(l.angle)*l.speed,vy:Math.sin(l.angle)*l.speed};
   const steps=170;
   for(let i=0;i<steps;i++){
     const res=stepShip(h,s,DT*1.6);
@@ -684,10 +707,14 @@ function update(dt){
     if(res==='crash'){
       spawnExplosion(game.ship.x,game.ship.y);
       game.state='crashing';
-      toast('💥 Crashed! Stroke counts — back to the tee.',1700);
+      toast('💥 Crashed! Stroke counts — replay from your last spot.',1700);
       setTimeout(()=>{if(game.state==='crashing'){resetShip();checkPickup();}},1100);
     }else if(res==='goal'){
       holeComplete();
+    }else if(res==='rest'){
+      game.ship.vx=0;game.ship.vy=0;
+      game.trail.length=0;
+      checkPickup(); // next shot from right here
     }else if(res==='lost'||game.flightTime>FLIGHT_TIMEOUT){
       game.state='crashing';
       toast(game.flightTime>FLIGHT_TIMEOUT?'🛰️ Stuck in orbit — calling it back.':'🌌 Drifted into deep space…',1700);
@@ -786,7 +813,7 @@ function render(){
     ctx.strokeStyle=pow>0.85?'#ff8a5c':'#8ee08e';
     ctx.lineWidth=5;ctx.lineCap='round';
     ctx.beginPath();
-    ctx.arc(h.start.x,h.start.y,30,-Math.PI/2,-Math.PI/2+pow*Math.PI*2);
+    ctx.arc(game.ship.x,game.ship.y,30,-Math.PI/2,-Math.PI/2+pow*Math.PI*2);
     ctx.stroke();
   }
 
